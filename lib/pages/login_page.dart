@@ -1,7 +1,59 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../auth.dart';
+import './home_page.dart';
 
-class LoginPage extends StatelessWidget {
+class LoginPage extends StatefulWidget {
   const LoginPage({Key? key}) : super(key: key);
+
+  @override
+  State<LoginPage> createState() => _LoginPageState();
+}
+
+class _LoginPageState extends State<LoginPage> {
+
+  bool isLogin = true;
+  String? errorMessage = '';
+
+  final TextEditingController _controllerEmail = TextEditingController();
+  final TextEditingController _controllerPassword = TextEditingController();
+
+  Future<void> signInWithEmailAndPassword() async {
+    try {
+      await Auth().signInWithEmailAndPassword(
+        email: _controllerEmail.text,
+        password: _controllerPassword.text,
+      );
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => HomePage()),
+      );
+    } on FirebaseAuthException catch (e) {
+      setState(() {
+        errorMessage = e.message;
+      });
+    }
+  }
+
+  Future<void> createUserWithEmailAndPassword() async {
+    try {
+      await Auth().createUserWithEmailAndPassword(
+        email: _controllerEmail.text,
+        password: _controllerPassword.text,
+      );
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => HomePage()),
+      );
+      
+    } on FirebaseAuthException catch (e) {
+      setState(() {
+        errorMessage = e.message;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -33,6 +85,7 @@ class LoginPage extends StatelessWidget {
 
             // Email Input Field
             TextField(
+              controller: _controllerEmail,
               decoration: InputDecoration(
                 hintText: "Email Address",
                 filled: true,
@@ -47,6 +100,7 @@ class LoginPage extends StatelessWidget {
 
             // Password Input Field
             TextField(
+              controller: _controllerPassword,
               obscureText: true,
               decoration: InputDecoration(
                 hintText: "Password",
@@ -59,6 +113,16 @@ class LoginPage extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 10),
+
+            // Error message display
+            if (errorMessage != null && errorMessage! .isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 5),
+                child: Text(
+                  errorMessage!,
+                  style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+                ),
+              ),
 
             // Forgot Password
             Align(
@@ -79,9 +143,7 @@ class LoginPage extends StatelessWidget {
 
             // Login Button
             ElevatedButton(
-              onPressed: () {
-                // Login Function
-              },
+              onPressed: isLogin ? signInWithEmailAndPassword : createUserWithEmailAndPassword,
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.white,
                 foregroundColor: Colors.black,
@@ -90,9 +152,10 @@ class LoginPage extends StatelessWidget {
                   borderRadius: BorderRadius.circular(20),
                 ),
               ),
-              child: const Text(
-                "Login",
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                // Login Function
+              child: Text(
+                isLogin ? "Login" : "Sign Up",
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
             ),
             const SizedBox(height: 20),
@@ -128,14 +191,18 @@ class LoginPage extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Text("Don't have an account? "),
+                Text(isLogin ? "Don't have an account? " : "Already have an account? "),
                 GestureDetector(
                   onTap: () {
+                    setState(() {
+                      isLogin = !isLogin;
+                      errorMessage = '';
+                    });
                     // Navigate to Sign Up Page
                   },
-                  child: const Text(
-                    "Sign Up Now",
-                    style: TextStyle(
+                  child: Text(
+                    isLogin ? "Sign Up Now" : "Login",
+                    style: const TextStyle(
                       fontWeight: FontWeight.bold,
                       decoration: TextDecoration.underline,
                     ),
