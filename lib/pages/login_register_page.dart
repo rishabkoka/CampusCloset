@@ -2,14 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../auth.dart';
 
-class LoginPage extends StatefulWidget {
-  const LoginPage({Key? key}) : super(key: key);
+class LoginPage2 extends StatefulWidget {
+  const LoginPage2({Key? key}) : super(key: key);
 
   @override
-  State<LoginPage> createState() => _LoginPageState();
+  State<LoginPage2> createState() => _LoginPage2State();
 }
 
-class _LoginPageState extends State<LoginPage> {
+class _LoginPage2State extends State<LoginPage2> {
   String? errorMessage = '';
   bool isLogin = true;
 
@@ -43,17 +43,33 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Widget _title() {
-    return const Text('Campus Closet');
+    return const Text(
+      'Campus Closet',
+      style: TextStyle(
+        fontSize: 24,
+        fontWeight: FontWeight.bold,
+        color: Colors.black87,
+      ),
+    );
   }
 
   Widget _entryField(
     String title,
     TextEditingController controller,
   ) {
-    return TextField(
-      controller: controller,
-      decoration: InputDecoration(
-        labelText: title,
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      child: TextField(
+        controller: controller,
+        decoration: InputDecoration(
+          labelText: title,
+          filled: true,
+          fillColor: Colors.white,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide.none,
+          ),
+        ),
       ),
     );
   }
@@ -63,10 +79,23 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Widget _submitButton() {
-    return ElevatedButton(
-      onPressed:
-        isLogin ? signInWithEmailAndPassword : createUserWithEmailAndPassword,
-      child: Text(isLogin ? 'Login' : 'Create Account'),
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.black87,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          padding: const EdgeInsets.symmetric(vertical: 14),
+        ),
+        onPressed:
+          isLogin ? signInWithEmailAndPassword : createUserWithEmailAndPassword,
+        child: Text(
+          isLogin ? 'Login' : 'Create Account',
+          style: const TextStyle(color: Colors.white, fontSize: 16),
+        ),
+      ),
     );
   }
 
@@ -77,34 +106,53 @@ class _LoginPageState extends State<LoginPage> {
           isLogin =!isLogin;
         });
       },
-      child: Text(isLogin ? 'Create Account' : 'Login'),
+      child: Text(
+        isLogin ? 'Create Account' : 'Login',
+        style: const TextStyle(fontSize: 16, color: Colors.blue),
+      ),
+    );
+  }
+
+  Widget _socialLoginButtons() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        IconButton(
+          icon: Image.asset('assets/images/google_logo.png'),
+          onPressed: () {}, // implement google sign-in
+        ),
+        const SizedBox(width: 20),
+        IconButton(
+          icon: Image.asset('assets/images/facebook_logo.png'),
+          onPressed: () {}, // implement facebook sign-in
+        ),
+      ],
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: _title(),
-      ),
-      body: Container(
-        height: double.infinity,
-        width: double.infinity,
+      backgroundColor: const Color(0x00EBE9CE),
+      body: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            // Add an Image widget here
+            _title(),
+            const SizedBox(height: 10),
             Image.asset(
-              'assets/images/cc_logo.png',  // Path to your image in assets
-              height: 100, // Adjust the height
-              width: 100,  // Adjust the width
+              'assets/images/cc_logo.png',
+              height: 80,
             ),
-            _entryField('email', _controllerEmail),
-            _entryField('password', _controllerPassword),
+            const SizedBox(height: 20),
+            _entryField('Email', _controllerEmail),
+            _entryField('Password', _controllerPassword),
             _errorMessage(),
             _submitButton(),
+            const SizedBox(height: 10),
+            _socialLoginButtons(),
             _loginOrRegisterButton(),
           ],
         ),

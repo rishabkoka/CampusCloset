@@ -1,7 +1,8 @@
 import 'auth.dart';
 import './pages/home_page.dart';
-import './pages/login_register_page.dart';
+
 import 'package:flutter/material.dart';
+import './pages/loading_screen.dart';
 
 class WidgetTree extends StatefulWidget {
   const WidgetTree({super.key});
@@ -19,7 +20,7 @@ class _WidgetTreeState extends State<WidgetTree> {
         if (snapshot.hasData) {
           return HomePage();
         } else {
-          return const LoginPage();
+          return const LoadingScreen();
         }
       },
     );
