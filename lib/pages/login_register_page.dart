@@ -43,7 +43,7 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Widget _title() {
-    return const Text('Firebase Auth');
+    return const Text('Campus Closet');
   }
 
   Widget _entryField(
@@ -59,14 +59,14 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Widget _errorMessage() {
-    return Text(errorMessage == '' ? '' : 'Humm ? $errorMessage');
+    return Text(errorMessage == '' ? '' : 'Account not found. Try again.');
   }
 
   Widget _submitButton() {
     return ElevatedButton(
       onPressed:
         isLogin ? signInWithEmailAndPassword : createUserWithEmailAndPassword,
-      child: Text(isLogin ? 'Login' : 'Register'),
+      child: Text(isLogin ? 'Login' : 'Create Account'),
     );
   }
 
@@ -77,7 +77,7 @@ class _LoginPageState extends State<LoginPage> {
           isLogin =!isLogin;
         });
       },
-      child: Text(isLogin ? 'Register instead' : 'Login instead'),
+      child: Text(isLogin ? 'Create Account' : 'Login'),
     );
   }
 
@@ -95,6 +95,12 @@ class _LoginPageState extends State<LoginPage> {
           crossAxisAlignment: CrossAxisAlignment.center,
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
+            // Add an Image widget here
+            Image.asset(
+              'assets/images/cc_logo.png',  // Path to your image in assets
+              height: 100, // Adjust the height
+              width: 100,  // Adjust the width
+            ),
             _entryField('email', _controllerEmail),
             _entryField('password', _controllerPassword),
             _errorMessage(),
