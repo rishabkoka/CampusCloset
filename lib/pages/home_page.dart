@@ -7,8 +7,9 @@ class HomePage extends StatelessWidget {
 
   final User? user = Auth().currentUser;
 
-  Future<void> signOut() async {
+  Future<void> signOut(BuildContext context) async {
     await Auth().signOut();
+    Navigator.pushReplacementNamed(context, '/login');
   }
 
   Widget _title() {
@@ -19,9 +20,9 @@ class HomePage extends StatelessWidget {
     return Text(user?.email ?? 'User email');
   }
 
-  Widget _signOutButton() {
+  Widget _signOutButton(BuildContext context) {
     return ElevatedButton(
-      onPressed: signOut,
+      onPressed: () => signOut(context),
       child: const Text('Sign Out'),
     );
   }
@@ -41,7 +42,7 @@ class HomePage extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
             _userUid(),
-            _signOutButton(),
+            _signOutButton(context),
           ],
         ),
       ),

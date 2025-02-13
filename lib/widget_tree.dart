@@ -1,6 +1,5 @@
 import 'auth.dart';
 import './pages/home_page.dart';
-
 import 'package:flutter/material.dart';
 import './pages/loading_screen.dart';
 
