@@ -6,7 +6,18 @@ import './pages/login_page.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
+  // await Firebase.initializeApp();
+
+// await Firebase.initializeApp(
+//   options: FirebaseOptions(
+//     apiKey: 'key',
+//     appId: 'id',
+//     messagingSenderId: 'sendid',
+//     projectId: 'myapp',
+//     storageBucket: 'myapp-b9yt18.appspot.com',
+//   )
+// );
+
   
   runApp(const MyApp());
 }
