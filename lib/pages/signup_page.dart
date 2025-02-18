@@ -2,26 +2,33 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../auth.dart';
 import './home_page.dart';
-import './signup_page.dart';
+import './login_page.dart';
 
-class LoginPage extends StatefulWidget {
-  const LoginPage({Key? key}) : super(key: key);
+class SignupPage extends StatefulWidget {
+  const SignupPage({Key? key}) : super(key: key);
 
   @override
-  State<LoginPage> createState() => _LoginPageState();
+  State<SignupPage> createState() => _SignupPageState();
 }
 
-class _LoginPageState extends State<LoginPage> {
+class _SignupPageState extends State<SignupPage> {
 
   bool isLogin = true;
   String? errorMessage = '';
 
   final TextEditingController _controllerEmail = TextEditingController();
   final TextEditingController _controllerPassword = TextEditingController();
+  final TextEditingController _controllerPasswordConfirm = TextEditingController();
 
-  Future<void> signInWithEmailAndPassword() async {
+  Future<void> createUserWithEmailAndPassword() async {
+    if (_controllerPassword.text != _controllerPasswordConfirm.text) {
+      setState(() {
+        errorMessage = "Passwords do not match";
+      });
+      return;
+    }
     try {
-      await Auth().signInWithEmailAndPassword(
+      await Auth().createUserWithEmailAndPassword(
         email: _controllerEmail.text,
         password: _controllerPassword.text,
       );
@@ -30,6 +37,7 @@ class _LoginPageState extends State<LoginPage> {
         context,
         MaterialPageRoute(builder: (context) => HomePage()),
       );
+      
     } on FirebaseAuthException catch (e) {
       setState(() {
         errorMessage = e.message;
@@ -48,7 +56,7 @@ class _LoginPageState extends State<LoginPage> {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             const Text(
-              "Welcome,",
+              "Create Account,",
               style: TextStyle(
                 fontSize: 32,
                 fontWeight: FontWeight.bold,
@@ -56,7 +64,7 @@ class _LoginPageState extends State<LoginPage> {
               ),
             ),
             const Text(
-              "Glad to see you!",
+              "to get started now!",
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w500,
@@ -96,6 +104,21 @@ class _LoginPageState extends State<LoginPage> {
             ),
             const SizedBox(height: 10),
 
+            TextField(
+              controller: _controllerPasswordConfirm,
+              obscureText: true,
+              decoration: InputDecoration(
+                hintText: "Confirm Password",
+                filled: true,
+                fillColor: Colors.white,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(20),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+
             // Error message display
             if (errorMessage != null && errorMessage! .isNotEmpty)
               Padding(
@@ -106,26 +129,11 @@ class _LoginPageState extends State<LoginPage> {
                 ),
               ),
 
-            // Forgot Password
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton(
-                onPressed: () {
-                  // Navigate to Forgot Password Page
-                },
-                child: const Text(
-                  "Forgot Password?",
-                  style: TextStyle(
-                    color: Colors.black,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ),
+            
 
-            // Login Button
+            // Signup Button
             ElevatedButton(
-              onPressed: signInWithEmailAndPassword,
+              onPressed: createUserWithEmailAndPassword,
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.white,
                 foregroundColor: Colors.black,
@@ -136,7 +144,7 @@ class _LoginPageState extends State<LoginPage> {
               ),
                 // Login Function
               child: const Text(
-                "Login",
+                "Sign Up",
                 style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
             ),
@@ -149,7 +157,7 @@ class _LoginPageState extends State<LoginPage> {
                 Padding(
                   padding: EdgeInsets.symmetric(horizontal: 10),
                   child: Text(
-                    "Or Login with",
+                    "Or Sign Up With",
                     style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
                   ),
                 ),
@@ -173,17 +181,17 @@ class _LoginPageState extends State<LoginPage> {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Text("Don't have an account? "),
+                const Text("Already have an account? "),
                 GestureDetector(
                   onTap: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => SignupPage()),
+                      MaterialPageRoute(builder: (context) => LoginPage()),
                     );
                     // Navigate to Sign Up Page
                   },
                   child: const Text(
-                    "Sign Up Now",
+                    "Login Now",
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       decoration: TextDecoration.underline,

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import './login_page.dart';
+import './signup_page.dart';
 
 class LoadingScreen extends StatelessWidget {
   const LoadingScreen({Key? key}) : super(key: key);
@@ -63,8 +64,11 @@ class LoadingScreen extends StatelessWidget {
                   elevation: 5,
                 ),
                 onPressed: () {
-                  // Navigate to Sign Up Page
-                  Navigator.pushNamed(context, '/signup');
+                  // Navigate to Login Page
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const SignupPage()),
+                  );
                 },
                 child: const Text(
                   'Sign Up',
