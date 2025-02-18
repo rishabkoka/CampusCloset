@@ -2,16 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../auth.dart';
 import './home_page.dart';
-import './signup_page.dart';
 
-class LoginPage extends StatefulWidget {
-  const LoginPage({Key? key}) : super(key: key);
+class CreateAccount extends StatefulWidget {
+  const CreateAccount({Key? key}) : super(key: key);
 
   @override
-  State<LoginPage> createState() => _LoginPageState();
+  State<CreateAccount> createState() => _CreateAccountState();
 }
 
-class _LoginPageState extends State<LoginPage> {
+class _CreateAccountState extends State<CreateAccount> {
 
   bool isLogin = true;
   String? errorMessage = '';
@@ -30,6 +29,25 @@ class _LoginPageState extends State<LoginPage> {
         context,
         MaterialPageRoute(builder: (context) => HomePage()),
       );
+    } on FirebaseAuthException catch (e) {
+      setState(() {
+        errorMessage = e.message;
+      });
+    }
+  }
+
+  Future<void> createUserWithEmailAndPassword() async {
+    try {
+      await Auth().createUserWithEmailAndPassword(
+        email: _controllerEmail.text,
+        password: _controllerPassword.text,
+      );
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => HomePage()),
+      );
+      
     } on FirebaseAuthException catch (e) {
       setState(() {
         errorMessage = e.message;
@@ -125,7 +143,7 @@ class _LoginPageState extends State<LoginPage> {
 
             // Login Button
             ElevatedButton(
-              onPressed: signInWithEmailAndPassword,
+              onPressed: isLogin ? signInWithEmailAndPassword : createUserWithEmailAndPassword,
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.white,
                 foregroundColor: Colors.black,
@@ -135,8 +153,8 @@ class _LoginPageState extends State<LoginPage> {
                 ),
               ),
                 // Login Function
-              child: const Text(
-                "Login",
+              child: Text(
+                isLogin ? "Login" : "Sign Up",
                 style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
             ),
@@ -173,18 +191,18 @@ class _LoginPageState extends State<LoginPage> {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Text("Don't have an account? "),
+                Text(isLogin ? "Don't have an account? " : "Already have an account? "),
                 GestureDetector(
                   onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => SignupPage()),
-                    );
+                    setState(() {
+                      isLogin = !isLogin;
+                      errorMessage = '';
+                    });
                     // Navigate to Sign Up Page
                   },
-                  child: const Text(
-                    "Sign Up Now",
-                    style: TextStyle(
+                  child: Text(
+                    isLogin ? "Sign Up Now" : "Login",
+                    style: const TextStyle(
                       fontWeight: FontWeight.bold,
                       decoration: TextDecoration.underline,
                     ),
