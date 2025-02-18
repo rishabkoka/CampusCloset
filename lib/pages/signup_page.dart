@@ -170,9 +170,19 @@ class _SignupPageState extends State<SignupPage> {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                _socialLoginButton("assets/images/google_logo.png"), // Google Logo
+                _socialLoginButton("assets/images/google_logo.png", () async {
+                  User? user = await Auth().signInWithGoogle();
+                  if (user != null) {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(builder: (context) => HomePage()),
+                    );
+                  }
+                }), // Google Logo
                 const SizedBox(width: 20),
-                _socialLoginButton("assets/images/facebook_logo.png"), // Facebook Logo
+                _socialLoginButton("assets/images/facebook_logo.png", () {
+
+                }) // Facebook Logo
               ],
             ),
             const SizedBox(height: 30),
@@ -206,11 +216,9 @@ class _SignupPageState extends State<SignupPage> {
     );
   }
 
-  Widget _socialLoginButton(String imagePath) {
+  Widget _socialLoginButton(String imagePath, Function onTap) {
     return GestureDetector(
-      onTap: () {
-        // Implement social login
-      },
+      onTap: () => onTap(),
       child: Container(
         height: 50,
         width: 100,
