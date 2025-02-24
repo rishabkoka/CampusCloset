@@ -1,105 +1,110 @@
 import 'package:flutter/material.dart';
+import 'edit_profile.dart';
 
 void main() {
-  runApp(MyApp());
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: ProfilePage(),
+      title: 'Profile Page',
+      theme: ThemeData(
+        primaryColor: const Color(0xFFF4F1E3),
+        scaffoldBackgroundColor: const Color(0xFFF4F1E3),
+        textTheme: const TextTheme(
+          bodyLarge: TextStyle(color: Colors.black, fontSize: 16),
+          bodyMedium: TextStyle(color: Colors.black54, fontSize: 14),
+        ),
+      ),
+      home: const ProfilePage(),
     );
   }
 }
 
 class ProfilePage extends StatelessWidget {
-  final String profileImage = 'assets/images/profile.svg';
-  final String userName = 'USER_NAME';
-  final String userJob = 'USER_JOB';
-  final String userEmail = 'USER_EMAIL';
-  final String userPhone = 'USER_PHONE';
-  final String userLocation = 'USER_LOCATION';
+  const ProfilePage({super.key});
 
   @override
   Widget build(BuildContext context) {
+    // Stubbed data for replacement with API/database calls
+    final String fullName = "Loading...";
+    final String email = "Loading...";
+    final String phone = "Loading...";
+    final String bio = "Loading...";
+    final String streetAddress = "Loading...";
+    final String city = "Loading...";
+    final String state = "Loading...";
+
     return Scaffold(
-      backgroundColor: Color(0xFFF4F1E3),
       appBar: AppBar(
-        title: Text('Profile'),
         centerTitle: true,
-        actions: [
-          IconButton(
-            icon: Icon(Icons.edit),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => EditProfilePage()),
-              );
-            },
-          ),
-        ],
+        elevation: 0,
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+        title: const Text(
+          "Profile",
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 22),
+        ),
       ),
       body: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ProfileCard(title: "Personal Info", children: [
+              ProfileInfoRow(label: "Full Name", value: fullName),
+              ProfileInfoRow(label: "Email", value: email),
+              ProfileInfoRow(label: "Phone", value: phone),
+            ]),
+            ProfileCard(title: "Bio", children: [
+              ProfileInfoRow(label: "Bio", value: bio),
+            ]),
+            ProfileCard(title: "Address", children: [
+              ProfileInfoRow(label: "Street Address", value: streetAddress),
+              ProfileInfoRow(label: "City", value: city),
+              ProfileInfoRow(label: "State", value: state),
+            ]),
+            const SizedBox(height: 20.0),
+            button("Edit Profile", Colors.black, Colors.white, () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const EditProfile()),
+              );
+            }, 50),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class ProfileCard extends StatelessWidget {
+  final String title;
+  final List<Widget> children;
+
+  const ProfileCard({super.key, required this.title, required this.children});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            CircleAvatar(
-              radius: 50,
-              backgroundImage: AssetImage(profileImage),
-            ),
-            SizedBox(height: 10),
             Text(
-              userName,
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+              title,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
-            SizedBox(height: 5),
-            Text(
-              userJob,
-              style: TextStyle(fontSize: 16, color: Colors.grey[600]),
-            ),
-            SizedBox(height: 20),
-            Card(
-              elevation: 2,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: ListTile(
-                leading: Icon(Icons.email, color: Colors.blue),
-                title: Text(userEmail),
-              ),
-            ),
-            SizedBox(height: 10),
-            Card(
-              elevation: 2,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: ListTile(
-                leading: Icon(Icons.phone, color: Colors.green),
-                title: Text(userPhone),
-              ),
-            ),
-            SizedBox(height: 10),
-            Card(
-              elevation: 2,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: ListTile(
-                leading: Icon(Icons.location_on, color: Colors.red),
-                title: Text(userLocation),
-              ),
-            ),
-            SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pop(context);
-              },
-              child: Text('Home'),
-            ),
+            const SizedBox(height: 8),
+            ...children,
           ],
         ),
       ),
@@ -107,198 +112,51 @@ class ProfilePage extends StatelessWidget {
   }
 }
 
-class EditProfilePage extends StatelessWidget {
-  const EditProfilePage({super.key});
+class ProfileInfoRow extends StatelessWidget {
+  final String label;
+  final String value;
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        centerTitle: false,
-        elevation: 0,
-        backgroundColor: const Color(0xFF00BF6D),
-        foregroundColor: Colors.white,
-        title: const Text("Edit Profile"),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0),
-        child: Column(
-          children: [
-            ProfilePic(
-              image: 'USER_IMAGE_URL',
-              imageUploadBtnPress: () {},
-            ),
-            const Divider(),
-            Form(
-              child: Column(
-                children: [
-                  UserInfoEditField(
-                    text: "Name",
-                    child: TextFormField(
-                      initialValue: "USER_NAME",
-                      decoration: inputDecoration(),
-                    ),
-                  ),
-                  UserInfoEditField(
-                    text: "Email",
-                    child: TextFormField(
-                      initialValue: "USER_EMAIL",
-                      decoration: inputDecoration(),
-                    ),
-                  ),
-                  UserInfoEditField(
-                    text: "Phone",
-                    child: TextFormField(
-                      initialValue: "USER_PHONE",
-                      decoration: inputDecoration(),
-                    ),
-                  ),
-                  UserInfoEditField(
-                    text: "Address",
-                    child: TextFormField(
-                      initialValue: "USER_LOCATION",
-                      decoration: inputDecoration(),
-                    ),
-                  ),
-                  UserInfoEditField(
-                    text: "Old Password",
-                    child: TextFormField(
-                      obscureText: true,
-                      initialValue: "USER_OLD_PASSWORD",
-                      decoration: inputDecoration(icon: Icons.visibility_off),
-                    ),
-                  ),
-                  UserInfoEditField(
-                    text: "New Password",
-                    child: TextFormField(
-                      decoration: inputDecoration(hintText: "New Password"),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16.0),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                button(context, "Cancel", Colors.grey[400]!, () {}),
-                const SizedBox(width: 16.0),
-                button(context, "Save Update", const Color(0xFF00BF6D), () {}),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  InputDecoration inputDecoration({String? hintText, IconData? icon}) {
-    return InputDecoration(
-      hintText: hintText,
-      filled: true,
-      fillColor: const Color(0xFF00BF6D).withOpacity(0.05),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
-      border: const OutlineInputBorder(
-        borderSide: BorderSide.none,
-        borderRadius: BorderRadius.all(Radius.circular(50)),
-      ),
-      suffixIcon: icon != null ? Icon(icon, size: 20) : null,
-    );
-  }
-
-  Widget button(BuildContext context, String text, Color color, VoidCallback onPressed) {
-    return SizedBox(
-      width: text == "Cancel" ? 120 : 160,
-      child: ElevatedButton(
-        onPressed: onPressed,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: color,
-          foregroundColor: Colors.white,
-          minimumSize: const Size(double.infinity, 48),
-          shape: const StadiumBorder(),
-        ),
-        child: Text(text),
-      ),
-    );
-  }
-}
-
-class ProfilePic extends StatelessWidget {
-  const ProfilePic({
-    super.key,
-    required this.image,
-    this.isShowPhotoUpload = false,
-    this.imageUploadBtnPress,
-  });
-
-  final String image;
-  final bool isShowPhotoUpload;
-  final VoidCallback? imageUploadBtnPress;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16.0),
-      margin: const EdgeInsets.symmetric(vertical: 16.0),
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        border: Border.all(
-          color:
-              Theme.of(context).textTheme.bodyLarge!.color!.withOpacity(0.08),
-        ),
-      ),
-      child: Stack(
-        alignment: Alignment.bottomRight,
-        children: [
-          CircleAvatar(
-            radius: 50,
-            backgroundImage: NetworkImage(image),
-          ),
-          InkWell(
-            onTap: imageUploadBtnPress,
-            child: CircleAvatar(
-              radius: 13,
-              backgroundColor: Theme.of(context).primaryColor,
-              child: const Icon(
-                Icons.add,
-                color: Colors.white,
-                size: 20,
-              ),
-            ),
-          )
-        ],
-      ),
-    );
-  }
-}
-
-class UserInfoEditField extends StatelessWidget {
-  const UserInfoEditField({
-    super.key,
-    required this.text,
-    required this.child,
-  });
-
-  final String text;
-  final Widget child;
+  const ProfileInfoRow({super.key, required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Expanded(
-            flex: 2,
-            child: Text(text),
+          Text(
+            label,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
           ),
-          Expanded(
-            flex: 3,
-            child: child,
+          Text(
+            value,
+            style: const TextStyle(fontSize: 16, color: Colors.black54),
           ),
         ],
       ),
     );
   }
+}
+
+Widget button(String text, Color backgroundColor, Color textColor, VoidCallback onPressed, double height) {
+  return SizedBox(
+    width: double.infinity,
+    height: height,
+    child: ElevatedButton(
+      onPressed: onPressed,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: backgroundColor,
+        foregroundColor: textColor,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        elevation: 4,
+      ),
+      child: Text(
+        text,
+        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+      ),
+    ),
+  );
 }
