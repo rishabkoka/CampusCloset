@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "938184380478",
+    "project_id": "campuscloset-ef092",
+    "storage_bucket": "campuscloset-ef092.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:938184380478:android:b8e451fe7a5675e3fa016f",
+        "android_client_info": {
+          "package_name": "com.example.flutter_p1"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "938184380478-ilhuvfnbvvluk6h0ihplqasa554ven94.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyASZFDpBZKlddrMr8AEaa-UG21dwEqm0X4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "938184380478-ilhuvfnbvvluk6h0ihplqasa554ven94.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "938184380478-sfeki58dcppq8q9ks0pkaitkq8fsok78.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.flutterP1"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
