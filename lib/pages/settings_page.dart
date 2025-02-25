@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import './profile_page.dart';
+import './user_settings.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({Key? key}) : super(key: key);
@@ -80,7 +81,12 @@ class SettingsPage extends StatelessWidget {
                 ),
                 elevation: 5,
               ),
-              onPressed: () {},
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const UserSettings()),
+                );
+              },
               child: Row(
                 children: [
                   Icon(
