@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import '../auth.dart';
 import 'package:flutter/material.dart';
+import './settings_page.dart';
 
 class HomePage extends StatelessWidget {
   HomePage({Key? key}) : super(key: key);
@@ -32,6 +33,18 @@ class HomePage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: _title(),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings),
+            iconSize: 35.0,
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const SettingsPage()),
+              );
+            }
+          ),
+        ],
       ),
       body: Container(
         height: double.infinity,

@@ -50,6 +50,10 @@ class ProfilePage extends StatelessWidget {
           "Profile",
           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 22),
         ),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pop(context),
+        ),
       ),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
