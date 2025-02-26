@@ -175,7 +175,7 @@ class _UserSettingsState extends State<UserSettings> {
                     TextField(
                       controller: inviteController,
                       decoration: InputDecoration(
-                        hintText: "Enter email or phone number",
+                        hintText: "Enter email",
                         prefixIcon: const Icon(Icons.send),
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                       ),

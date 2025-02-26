@@ -42,4 +42,11 @@
             <data android:mimeType="text/plain"/>
         </intent>
     </queries>
+    <queries>
+  <package android:name="com.whatsapp" />
+  <package android:name="com.twitter.android" />
+  <package android:name="com.instagram.android" />
+  <package android:name="com.facebook.katana" />
+</queries>
+
 </manifest>
