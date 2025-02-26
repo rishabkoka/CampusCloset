@@ -15,6 +15,7 @@ class _UserSettingsState extends State<UserSettings> {
   final TextEditingController inviteController = TextEditingController();
   final TextEditingController issueController = TextEditingController(); // Controller for issue reporting
 
+
   Future<void> logoutPopup(BuildContext context) async {
     return showDialog<void>(
       context: context,
@@ -41,6 +42,113 @@ class _UserSettingsState extends State<UserSettings> {
       },
     );
   }
+
+  Future<void> passwordPopup(BuildContext context) async {
+  final _oldPasswordController = TextEditingController();
+  final _newPasswordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
+
+  // Define a variable to hold error messages
+  String? errorMessage = '';
+
+  return showDialog<void>(
+    context: context,
+    barrierDismissible: false, // Prevents closing the popup when tapping outside
+    builder: (BuildContext context) {
+      return StatefulBuilder(
+        builder: (BuildContext context, StateSetter setState) {
+          return AlertDialog(
+            title: const Text('Change Password'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  TextField(
+                    controller: _oldPasswordController,
+                    obscureText: true,
+                    decoration: const InputDecoration(
+                      labelText: 'Old Password',
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: _newPasswordController,
+                    obscureText: true,
+                    decoration: const InputDecoration(
+                      labelText: 'New Password',
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: _confirmPasswordController,
+                    obscureText: true,
+                    decoration: const InputDecoration(
+                      labelText: 'Confirm New Password',
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+
+                  // Show error message if there's any
+                  if (errorMessage != null && errorMessage!.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 5),
+                      child: Text(
+                        errorMessage!,
+                        style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            actions: <Widget>[
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () async {
+                  if (_newPasswordController.text == _confirmPasswordController.text) {
+                    try {
+                      // Reauthenticate user with old password
+                      User? user = FirebaseAuth.instance.currentUser;
+                      AuthCredential credential = EmailAuthProvider.credential(
+                        email: user!.email!,
+                        password: _oldPasswordController.text,
+                      );
+
+                      // Reauthenticate the user
+                      await user.reauthenticateWithCredential(credential);
+
+                      // Update password if reauthentication is successful
+                      await user.updatePassword(_newPasswordController.text);
+
+                      Navigator.of(context).pop(); // Close the dialog
+                      // Optionally show a success message or navigate
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Password updated successfully!')),
+                      );
+                    } on FirebaseAuthException catch (e) {
+                      // Handle authentication errors and display the error message
+                      setState(() {
+                        errorMessage = "Incorrect old password. Please try again.";
+                      });
+                    }
+                  } else {
+                    setState(() {
+                      // Set error message if passwords do not match
+                      errorMessage = "Passwords do not match. Please try again.";
+                    });
+                  }
+                },
+                child: const Text('Confirm'),
+              ),
+            ],
+          );
+        },
+      );
+    },
+  );
+}
 
   Future<void> reportIssuePopup(BuildContext context) async {
     return showDialog<void>(
@@ -209,6 +317,24 @@ class _UserSettingsState extends State<UserSettings> {
               ),
             ),
             const SizedBox(height: 20),
+
+            /// **Change Password Button**
+            ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.grey[800],
+                minimumSize: const Size(double.infinity, 50),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                elevation: 5,
+              ),
+              onPressed: () => passwordPopup(context),
+              icon: const Icon(Icons.delete, color: Colors.white),
+              label: const Text(
+                'Change Password',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+              ),
+            ),
+            const SizedBox(height: 15),
+
 
             /// **Delete Account Button**
             ElevatedButton.icon(

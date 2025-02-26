@@ -32,7 +32,7 @@ class _LoginPageState extends State<LoginPage> {
       );
     } on FirebaseAuthException catch (e) {
       setState(() {
-        errorMessage = e.message;
+        errorMessage = 'The email or password is incorrect. Please try again.';
       });
     }
   }
