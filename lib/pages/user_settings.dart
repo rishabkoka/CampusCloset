@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:url_launcher/url_launcher.dart'; // For email sending
+import 'package:url_launcher/url_launcher.dart'; 
+import 'package:flutter_firebase_project/pages/send_email.dart'; // Update path if needed
+
+
+
 
 class UserSettings extends StatefulWidget {
   const UserSettings({Key? key}) : super(key: key);
@@ -257,40 +261,38 @@ class _UserSettingsState extends State<UserSettings> {
   }
 
   Future<void> sendReport(String issueText) async {
-    if (issueText.isEmpty) {
-      Fluttertoast.showToast(msg: "Please enter an issue before submitting.");
-      return;
-    }
-
-    final Uri emailUri = Uri(
-      scheme: 'mailto',
-      path: 'admin@yourapp.com', // Replace with actual admin email
-      query: {
-        'subject': 'User Issue Report',
-        'body': 'User Issue:\n\n$issueText',
-      }.entries.map((e) => '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}').join('&'),
-    );
-
-    if (await canLaunchUrl(emailUri)) {
-      await launchUrl(emailUri);
-    } else {
-      Fluttertoast.showToast(msg: "Could not open email client. Please try manually.");
-    }
+  if (issueText.isEmpty) {
+    Fluttertoast.showToast(msg: "Please enter an issue before submitting.");
+    return;
   }
 
-  Future<void> inviteUser() async {
-    String input = inviteController.text.trim();
-    if (input.isEmpty) {
-      Fluttertoast.showToast(msg: "Please enter an email.");
-      return;
-    }
-
-    // Simulating invite process (Replace this with actual email/SMS sending logic)
-    Future.delayed(const Duration(seconds: 1), () {
-      Fluttertoast.showToast(msg: "Invitation sent to $input!");
-      inviteController.clear();
-    });
+  try {
+    await sendIssueReport(issueText);
+    Fluttertoast.showToast(msg: "✅ Issue reported successfully!");
+  } catch (e) {
+    Fluttertoast.showToast(msg: "❌ Failed to send report: $e");
   }
+}
+
+
+
+ Future<void> inviteUser() async {
+  String input = inviteController.text.trim();
+  if (input.isEmpty) {
+    Fluttertoast.showToast(msg: "Please enter an email.");
+    return;
+  }
+
+  try {
+    await sendInviteEmail(input);
+    Fluttertoast.showToast(msg: "✅ Invitation sent to $input!");
+    inviteController.clear();
+  } catch (e) {
+    Fluttertoast.showToast(msg: "❌ Failed to send invitation: $e");
+  }
+}
+
+
 
   @override
   Widget build(BuildContext context) {
