@@ -43,6 +43,72 @@ class _UserSettingsState extends State<UserSettings> {
     );
   }
 
+  Future<void> deleteAccountPopup(BuildContext context) async {
+    final TextEditingController emailController = TextEditingController();
+    final TextEditingController passwordController = TextEditingController();
+    String? errorMessage;
+
+    await showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text('Delete Account'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: emailController,
+                    decoration: InputDecoration(
+                      labelText: 'Email',
+                      errorText: errorMessage,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: passwordController,
+                    obscureText: true,
+                    decoration: InputDecoration(
+                      labelText: 'Password',
+                      errorText: errorMessage,
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    try {
+                      User user = _auth.currentUser!;
+                      AuthCredential credential = EmailAuthProvider.credential(
+                        email: emailController.text.trim(),
+                        password: passwordController.text.trim(),
+                      );
+                      await user.reauthenticateWithCredential(credential);
+                      await user.delete();
+                      Navigator.pop(context);
+                      Navigator.pushReplacementNamed(context, '/login');
+                    } on FirebaseAuthException catch (e) {
+                      setState(() {
+                        errorMessage = e.message;
+                      });
+                    }
+                  },
+                  child: const Text('Delete'),
+                )
+              ],
+            );
+          },
+        );
+      }
+    );
+  }
+
   Future<void> passwordPopup(BuildContext context) async {
   final _oldPasswordController = TextEditingController();
   final _newPasswordController = TextEditingController();
@@ -344,7 +410,7 @@ class _UserSettingsState extends State<UserSettings> {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
                 elevation: 5,
               ),
-              onPressed: () => logoutPopup(context),
+              onPressed: () => deleteAccountPopup(context),
               icon: const Icon(Icons.delete, color: Colors.white),
               label: const Text(
                 'Delete Account',
