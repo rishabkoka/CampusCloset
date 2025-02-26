@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:url_launcher/url_launcher.dart'; // For email sending
 
 class UserSettings extends StatefulWidget {
   const UserSettings({Key? key}) : super(key: key);
@@ -12,6 +13,7 @@ class UserSettings extends StatefulWidget {
 class _UserSettingsState extends State<UserSettings> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final TextEditingController inviteController = TextEditingController();
+  final TextEditingController issueController = TextEditingController(); // Controller for issue reporting
 
   Future<void> logoutPopup(BuildContext context) async {
     return showDialog<void>(
@@ -23,9 +25,7 @@ class _UserSettingsState extends State<UserSettings> {
           content: const Text('Are you sure you want to log out?'),
           actions: <Widget>[
             TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
+              onPressed: () => Navigator.of(context).pop(),
               child: const Text('Cancel'),
             ),
             TextButton(
@@ -42,70 +42,66 @@ class _UserSettingsState extends State<UserSettings> {
     );
   }
 
-  Future<void> deleteAccountPopup(BuildContext context) async {
-    final TextEditingController emailController = TextEditingController();
-    final TextEditingController passwordController = TextEditingController();
-    String? errorMessage;
-
-    await showDialog(
+  Future<void> reportIssuePopup(BuildContext context) async {
+    return showDialog<void>(
       context: context,
       builder: (BuildContext context) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return AlertDialog(
-              title: const Text('Delete Account'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(
-                    controller: emailController,
-                    decoration: InputDecoration(
-                      labelText: 'Email',
-                      errorText: errorMessage,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  TextField(
-                    controller: passwordController,
-                    obscureText: true,
-                    decoration: InputDecoration(
-                      labelText: 'Password',
-                      errorText: errorMessage,
-                    ),
-                  ),
-                ],
+        return AlertDialog(
+          title: const Text("Report an Issue"),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text("Describe the issue you are facing:"),
+              const SizedBox(height: 10),
+              TextField(
+                controller: issueController,
+                maxLines: 4,
+                decoration: InputDecoration(
+                  hintText: "Enter your issue here...",
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                ),
               ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Cancel'),
-                ),
-                ElevatedButton(
-                  onPressed: () async {
-                    try {
-                      User user = _auth.currentUser!;
-                      AuthCredential credential = EmailAuthProvider.credential(
-                        email: emailController.text.trim(),
-                        password: passwordController.text.trim(),
-                      );
-                      await user.reauthenticateWithCredential(credential);
-                      await user.delete();
-                      Navigator.pop(context);
-                      Navigator.pushReplacementNamed(context, '/login');
-                    } on FirebaseAuthException catch (e) {
-                      setState(() {
-                        errorMessage = e.message;
-                      });
-                    }
-                  },
-                  child: const Text('Delete'),
-                ),
-              ],
-            );
-          },
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Cancel"),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                sendReport(issueController.text);
+                issueController.clear();
+                Navigator.pop(context);
+              },
+              child: const Text("Submit"),
+            ),
+          ],
         );
       },
     );
+  }
+
+  Future<void> sendReport(String issueText) async {
+    if (issueText.isEmpty) {
+      Fluttertoast.showToast(msg: "Please enter an issue before submitting.");
+      return;
+    }
+
+    final Uri emailUri = Uri(
+      scheme: 'mailto',
+      path: 'admin@yourapp.com', // Replace with actual admin email
+      query: {
+        'subject': 'User Issue Report',
+        'body': 'User Issue:\n\n$issueText',
+      }.entries.map((e) => '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}').join('&'),
+    );
+
+    if (await canLaunchUrl(emailUri)) {
+      await launchUrl(emailUri);
+    } else {
+      Fluttertoast.showToast(msg: "Could not open email client. Please try manually.");
+    }
   }
 
   Future<void> inviteUser() async {
@@ -197,6 +193,23 @@ class _UserSettingsState extends State<UserSettings> {
             ),
             const SizedBox(height: 20),
 
+            /// **Report an Issue Feature**
+            Card(
+              elevation: 3,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              child: ListTile(
+                leading: const Icon(Icons.report_problem, color: Colors.red, size: 30),
+                title: const Text(
+                  "Report an Issue",
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                subtitle: const Text("Tell us about any issues you are facing."),
+                trailing: const Icon(Icons.arrow_forward_ios, color: Colors.grey, size: 18),
+                onTap: () => reportIssuePopup(context),
+              ),
+            ),
+            const SizedBox(height: 20),
+
             /// **Delete Account Button**
             ElevatedButton.icon(
               style: ElevatedButton.styleFrom(
@@ -205,9 +218,7 @@ class _UserSettingsState extends State<UserSettings> {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
                 elevation: 5,
               ),
-              onPressed: () {
-                deleteAccountPopup(context);
-              },
+              onPressed: () => logoutPopup(context),
               icon: const Icon(Icons.delete, color: Colors.white),
               label: const Text(
                 'Delete Account',
@@ -224,9 +235,7 @@ class _UserSettingsState extends State<UserSettings> {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
                 elevation: 5,
               ),
-              onPressed: () {
-                logoutPopup(context);
-              },
+              onPressed: () => logoutPopup(context),
               icon: const Icon(Icons.logout, color: Colors.white),
               label: const Text(
                 'Log Out',
