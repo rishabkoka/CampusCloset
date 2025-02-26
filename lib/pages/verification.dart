@@ -9,10 +9,13 @@ class Verification extends StatefulWidget {
 
 class VerificationState extends State<Verification> {
   User? _user;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
   bool isEmailVerified = false;
   bool isVerificationEmailSent = false;
-  bool isNumberVerified = false;
+  bool isPhoneVerified = false;
   bool isVerificationTextSent = false;
+  TextEditingController _phoneController = TextEditingController();
+  String _verificationId = '';
 
   @override
   void initState() {
@@ -117,6 +120,178 @@ class VerificationState extends State<Verification> {
         },
       );
     }
+  }
+
+  Future<void> sendVerificationText() async {
+    String phoneNumber = _phoneController.text.trim();
+
+    // Show loading indicator while sending the code
+    showDialog(
+      context: context,
+      builder: (context) => const Center(child: CircularProgressIndicator()),
+    );
+
+    await _auth.verifyPhoneNumber(
+      phoneNumber: phoneNumber,
+      verificationCompleted: (PhoneAuthCredential credential) async {
+        // Automatically sign in the user if the phone number is verified
+        await _auth.signInWithCredential(credential);
+        // Dismiss the loading dialog
+        Navigator.of(context).pop();
+        setState(() {
+          isPhoneVerified = true;
+        });
+        // Optionally, show success message or navigate to the next screen
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text("Phone number verified successfully"),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: Text("OK"),
+              ),
+            ],
+          ),
+        );
+      },
+      verificationFailed: (FirebaseAuthException e) {
+        Navigator.of(context).pop(); // Dismiss the loading dialog
+        // Handle verification failure (e.g., invalid phone number)
+        print("Phone number verification failed: ${e.message}");
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text("Verification failed"),
+            content: Text(e.message ?? "Unknown error occurred"),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: Text("OK"),
+              ),
+            ],
+          ),
+        );
+      },
+      codeSent: (String verificationId, int? resendToken) {
+        Navigator.of(context).pop(); // Dismiss the loading dialog
+        setState(() {
+          _verificationId = verificationId;
+        });
+        // Show a dialog to input the OTP
+        _showOtpDialog();
+      },
+      codeAutoRetrievalTimeout: (String verificationId) {
+        // Handle auto retrieval timeout
+        Navigator.of(context).pop(); // Dismiss the loading dialog
+        print("Code auto retrieval timed out.");
+      },
+    );
+  }
+
+  void _showOtpDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        TextEditingController otpController = TextEditingController();
+
+        return AlertDialog(
+          title: Text("Enter OTP"),
+          content: TextField(
+            controller: otpController,
+            keyboardType: TextInputType.number,
+            decoration: InputDecoration(
+              labelText: 'OTP Code',
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () async {
+                String otp = otpController.text.trim();
+
+                if (otp.length == 6) {
+                  // Verify OTP
+                  try {
+                    PhoneAuthCredential credential = PhoneAuthProvider.credential(
+                      verificationId: _verificationId,
+                      smsCode: otp,
+                    );
+                    await _auth.signInWithCredential(credential);
+                    Navigator.of(context).pop(); // Close OTP dialog
+                    setState(() {
+                      isPhoneVerified = true;
+                    });
+
+                    // Optionally show success message
+                    showDialog(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        title: Text("Phone number verified successfully!"),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.of(context).pop(),
+                            child: Text("OK"),
+                          ),
+                        ],
+                      ),
+                    );
+                  } catch (e) {
+                    print("Failed to verify OTP: $e");
+                    showDialog(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        title: Text("Verification failed"),
+                        content: Text("Invalid OTP entered"),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.of(context).pop(),
+                            child: Text("OK"),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+                }
+              },
+              child: Text("Verify"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void showPhoneNumberDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text("Enter Phone Number"),
+          content: TextField(
+            controller: _phoneController,
+            decoration: InputDecoration(
+              labelText: 'Phone Number',
+              hintText: '+1 123 456 7890',
+              ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Close phone number input dialog
+                sendVerificationText(); // Send verification code
+              },
+              child: Text("Send"),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -229,7 +404,9 @@ class VerificationState extends State<Verification> {
                     ),
                     elevation: 5,
                   ),
-                  onPressed: () {},
+                  onPressed: () {
+                    showPhoneNumberDialog();
+                  },
                   child: Text(
                     isVerificationEmailSent ? 'Resend Verification Text' : 'Send Verification Text',
                     style: TextStyle(
@@ -261,7 +438,7 @@ class VerificationState extends State<Verification> {
             ),
             const SizedBox(height: 10.0),
             Text(
-              isNumberVerified ? "Phone number has been verified!" : "Phone number has not been verified",
+              isPhoneVerified ? "Phone number has been verified!" : "Phone number has not been verified",
               style: TextStyle(
                 fontSize: 14,
               ),
