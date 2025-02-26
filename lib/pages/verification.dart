@@ -16,6 +16,7 @@ class VerificationState extends State<Verification> {
   bool isVerificationTextSent = false;
   TextEditingController _phoneController = TextEditingController();
   String _verificationId = '';
+  String userNumber = '';
 
   @override
   void initState() {
@@ -124,6 +125,7 @@ class VerificationState extends State<Verification> {
 
   Future<void> sendVerificationText() async {
     String phoneNumber = _phoneController.text.trim();
+    userNumber = phoneNumber;
 
     // Show loading indicator while sending the code
     showDialog(
@@ -135,13 +137,13 @@ class VerificationState extends State<Verification> {
       phoneNumber: phoneNumber,
       verificationCompleted: (PhoneAuthCredential credential) async {
         // Automatically sign in the user if the phone number is verified
-        await _auth.signInWithCredential(credential);
+        // await _auth.signInWithCredential(credential);
         // Dismiss the loading dialog
         Navigator.of(context).pop();
         setState(() {
           isPhoneVerified = true;
         });
-        // Optionally, show success message or navigate to the next screen
+        // Show success message or navigate to the next screen
         showDialog(
           context: context,
           builder: (context) => AlertDialog(
@@ -174,6 +176,7 @@ class VerificationState extends State<Verification> {
         );
       },
       codeSent: (String verificationId, int? resendToken) {
+        isVerificationTextSent = true;
         Navigator.of(context).pop(); // Dismiss the loading dialog
         setState(() {
           _verificationId = verificationId;
@@ -196,13 +199,18 @@ class VerificationState extends State<Verification> {
         TextEditingController otpController = TextEditingController();
 
         return AlertDialog(
-          title: Text("Enter OTP"),
-          content: TextField(
-            controller: otpController,
-            keyboardType: TextInputType.number,
-            decoration: InputDecoration(
-              labelText: 'OTP Code',
-            ),
+          title: Text("Enter Verification Code"),
+          content: Column(
+            children: [
+              Text("Code has been sent to ${userNumber}"),
+              TextField(
+                controller: otpController,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  labelText: 'Verification Code',
+                ),
+              ),
+            ]
           ),
           actions: [
             TextButton(
@@ -327,10 +335,8 @@ class VerificationState extends State<Verification> {
                 ),
             ),
             Row(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                if (!isVerificationEmailSent)
-                  SizedBox(width: 8),
-                SizedBox(width: 7),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Color.fromARGB(255, 240, 238, 227),
@@ -391,10 +397,8 @@ class VerificationState extends State<Verification> {
                 ),
             ),
             Row(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                if (!isVerificationEmailSent)
-                  SizedBox(width: 7),
-                SizedBox(width: 12),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Color.fromARGB(255, 240, 238, 227),
@@ -408,31 +412,12 @@ class VerificationState extends State<Verification> {
                     showPhoneNumberDialog();
                   },
                   child: Text(
-                    isVerificationEmailSent ? 'Resend Verification Text' : 'Send Verification Text',
+                    isVerificationTextSent ? 'Resend Verification Text' : 'Send Verification Text',
                     style: TextStyle(
                       fontSize: 14,
                       color: Colors.black,
                     ),
                     ),
-                ),
-                const SizedBox(width: 20),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Color.fromARGB(255, 240, 238, 227),
-                    minimumSize: const Size(150, 50),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                    elevation: 5,
-                  ),
-                  onPressed: () {},
-                  child: Text(
-                    'Check Verification',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.black,
-                    ),
-                  ),
                 ),
               ],
             ),
