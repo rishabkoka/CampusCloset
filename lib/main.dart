@@ -4,6 +4,7 @@ import 'firebase_options.dart';
 import 'widget_tree.dart';
 import './pages/home_page.dart';
 import './pages/login_page.dart';
+import './pages/track_activity.dart';
 
 Future<void> main() async {
   
@@ -22,18 +23,20 @@ class MyApp extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        primarySwatch: Colors.orange,
-      ),
-      home: const WidgetTree(),
+    return TrackActivity(
+      child: MaterialApp(
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData(
+          primarySwatch: Colors.orange,
+        ),
+        home: const WidgetTree(),
 
-      // Set up the routes
-      routes: {
-        '/login': (context) => LoginPage(),
-        '/home:': (context) => HomePage(),
-      },
+        // Set up the routes
+        routes: {
+          '/login': (context) => LoginPage(),
+          '/home:': (context) => HomePage(),
+        },
+      )
     );
   }
 }
