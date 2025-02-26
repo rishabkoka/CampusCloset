@@ -17,6 +17,7 @@ dependencies:
   firebase_auth: ^5.4.2
   google_sign_in: ^6.2.1
   flutter_svg: ^2.0.9
+  fluttertoast: ^8.2.12
 
 
 dev_dependencies:
