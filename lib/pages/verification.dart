@@ -1,53 +1,136 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-
-void main() {
-  runApp(MyApp());
-}
-
-class MyApp extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: Verification(),
-    );
-  }
-}
+import './home_page.dart';
 
 class Verification extends StatefulWidget {
-  Verification({super.key});
-
   @override
-  _VerificationState createState() => _VerificationState();
+  VerificationState createState() => VerificationState();
 }
 
-class _VerificationState extends State<Verification> {
-
-  bool isVisible = false;
-  String output = '';
-
-  final TextEditingController emailController = TextEditingController();
-  final TextEditingController phoneController = TextEditingController();
+class VerificationState extends State<Verification> {
+  User? _user;
+  bool isEmailVerified = false;
+  bool isVerificationEmailSent = false;
+  bool isNumberVerified = false;
+  bool isVerificationTextSent = false;
 
   @override
-  void dispose() {
-    emailController.dispose();
-    phoneController.dispose();
-    super.dispose();
+  void initState() {
+    super.initState();
+    _user = FirebaseAuth.instance.currentUser;
+
+    if (_user != null) {
+      isEmailVerified = _user!.emailVerified;
+    }
+  }
+
+  Future<void> _sendVerificationEmail() async {
+    if (_user != null && !isEmailVerified) {
+      try {
+        await _user!.sendEmailVerification();
+        setState(() {
+          isVerificationEmailSent = true; 
+        });
+        
+        showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: Text("Verification Email Sent"),
+              content: Text("A verification email has been sent to ${_user?.email}. Please check your inbox and verify your email address."),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();  // Close the dialog
+                  },
+                  child: Text("OK"),
+                ),
+              ],
+            );
+          },
+        );
+
+      } catch (e) {
+        showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: Text("Error"),
+              content: Text("Error sending email verification: $e"),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();  // Close the dialog
+                  },
+                  child: Text("OK"),
+                ),
+              ],
+            );
+          },
+        );
+      }
+    }
+  }
+
+  Future<void> _checkEmailVerification() async {
+    await _user?.reload();
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user != null && user.emailVerified) {
+      setState(() {
+        isEmailVerified = true;
+      });
+      
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: Text("Email Verified"),
+            content: Text("Your email has been successfully verified"),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                child: Text("OK"),
+              ),
+            ],
+          );
+        },
+      );
+    } else {
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: Text("Email Not Verified"),
+            content: Text("Your email is not yet verified. Please check your inbox."),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();  // Close the dialog
+                },
+                child: Text("OK"),
+              ),
+            ],
+          );
+        },
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xFFF4F1E3),
+      backgroundColor: const Color(0xFFF4F1E3),
       body: Center(
         child: Column(
           children: [
             Container(
-              padding: EdgeInsets.fromLTRB(0, 40.0, 0, 0),
+              padding: EdgeInsets.fromLTRB(0, 60.0, 0, 0),
               child:
                 Text(
-                  'Please Verify Your Account',
+                  'Account Verification',
                   style: TextStyle(
                     fontSize: 26,
                     fontWeight: FontWeight.bold,
@@ -55,151 +138,162 @@ class _VerificationState extends State<Verification> {
                   ),
                 ),
             ),
+            const SizedBox(height: 40),
             Container(
-              padding: EdgeInsets.fromLTRB(0,10.0,0,0),
+              padding: EdgeInsets.fromLTRB(0, 15.0, 0, 10.0),
               child:
                 Text(
-                  'Can verify through Email, Text, or Both',
+                  'Email',
                   style: TextStyle(
-                    fontSize: 14,
+                    fontSize: 18,
                     fontWeight: FontWeight.bold,
                     color: Colors.black,
                   ),
                 ),
             ),
-            const SizedBox(height: 50.0),
-            Column(
+            Row(
               children: [
-                Container(
-                  padding: EdgeInsets.all(15.0),
+                if (!isVerificationEmailSent)
+                  SizedBox(width: 8),
+                SizedBox(width: 7),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Color.fromARGB(255, 240, 238, 227),
+                    minimumSize: const Size(150, 50),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                    elevation: 5,
+                  ),
+                  onPressed: _sendVerificationEmail,
                   child: Text(
-                    'Please Enter Your Email Address',
+                    isVerificationEmailSent ? 'Resend Verification Email' : 'Send Verification Email',
                     style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      color: Colors.black,
+                    ),
+                    ),
+                ),
+                const SizedBox(width: 20),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Color.fromARGB(255, 240, 238, 227),
+                    minimumSize: const Size(150, 50),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                    elevation: 5,
+                  ),
+                  onPressed: _checkEmailVerification,
+                  child: Text(
+                    'Check Verification',
+                    style: TextStyle(
+                      fontSize: 14,
                       color: Colors.black,
                     ),
                   ),
                 ),
-                TextField(
-                  controller: emailController,
-                  decoration: InputDecoration(
-                    hintText: "Email Address",
-                    filled: true,
-                    fillColor: Colors.white,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(20),
-                      borderSide: BorderSide.none,
-                    ),
+              ],
+            ),
+            const SizedBox(height: 10.0),
+            Text(
+              isEmailVerified ? "Email has been verified!" : "Email has not been verified",
+              style: TextStyle(
+                fontSize: 14,
+              ),
+            ),
+            const SizedBox(height: 40),
+            Container(
+              padding: EdgeInsets.fromLTRB(0, 15.0, 0, 10.0),
+              child:
+                Text(
+                  'Phone Number',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
                   ),
                 ),
-                Container(
-                  padding: EdgeInsets.all(15.0),
-                  child: 
-                    SizedBox(
-                      width: 90,
-                      height: 35,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.white, // White background
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(30),
-                          ),
-                          elevation: 5,
-                        ),
-                        onPressed: () {
-                          setState(() {
-                            output = 'Verification Code sent to ${emailController.text}';
-                            isVisible = true;
-                          });
-                        },
-                        child: const Text(
-                          'Send',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black,
-                          ),
-                        ),
-                      ),
-                    ),
-                ),
-              ]
             ),
-            const SizedBox(height: 25.0),
-            Column(
+            Row(
               children: [
-                Container(
-                  padding: EdgeInsets.all(15.0),
+                if (!isVerificationEmailSent)
+                  SizedBox(width: 7),
+                SizedBox(width: 12),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Color.fromARGB(255, 240, 238, 227),
+                    minimumSize: const Size(150, 50),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                    elevation: 5,
+                  ),
+                  onPressed: () {},
                   child: Text(
-                    'Please Enter Your Phone Number',
+                    isVerificationEmailSent ? 'Resend Verification Text' : 'Send Verification Text',
                     style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      color: Colors.black,
+                    ),
+                    ),
+                ),
+                const SizedBox(width: 20),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Color.fromARGB(255, 240, 238, 227),
+                    minimumSize: const Size(150, 50),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                    elevation: 5,
+                  ),
+                  onPressed: () {},
+                  child: Text(
+                    'Check Verification',
+                    style: TextStyle(
+                      fontSize: 14,
                       color: Colors.black,
                     ),
                   ),
                 ),
-                TextField(
-                  controller: phoneController,
-                  decoration: InputDecoration(
-                    hintText: "Phone Number",
-                    filled: true,
-                    fillColor: Colors.white,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(20),
-                      borderSide: BorderSide.none,
-                    ),
-                  ),
-                ),
-                Container(
-                  padding: EdgeInsets.all(15.0),
-                  child: 
-                    SizedBox(
-                      width: 90,
-                      height: 35,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.white, // White background
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(30),
-                          ),
-                          elevation: 5,
-                        ),
-                        onPressed: () {
-                          setState(() {
-                            output = 'Verification Code sent to ${phoneController.text}';
-                            isVisible = true;
-                          });
-                        },
-                        child: const Text(
-                          'Send',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black,
-                          ),
-                        ),
-                      ),
-                    ),
-                ),
-              ]
+              ],
             ),
-            const SizedBox(height: 25.0),
-            Visibility( 
-              visible: isVisible,
-              child: Text(
-                    output,
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black,
-                    ),
-                  ),
-            )
+            const SizedBox(height: 10.0),
+            Text(
+              isNumberVerified ? "Phone number has been verified!" : "Phone number has not been verified",
+              style: TextStyle(
+                fontSize: 14,
+              ),
+            ),
           ],
         ),
-      )
+      ),
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Align(
+          alignment: Alignment.bottomRight,
+          child: Container(
+            width: 75.0,
+            height: 40.0,
+            child: FloatingActionButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => HomePage()),
+                );
+              },
+              child: Text(
+                "Next",
+                style: TextStyle(
+                  color: Colors.black,
+                )
+              ),
+              backgroundColor: Color.fromARGB(255, 240, 238, 227),
+            ),
+          )
+        ),
+      ),
     );
   }
 }

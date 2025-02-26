@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../auth.dart';
-import './home_page.dart';
 import './login_page.dart';
+import './verification.dart';
 
 class SignupPage extends StatefulWidget {
   const SignupPage({Key? key}) : super(key: key);
@@ -35,7 +35,7 @@ class _SignupPageState extends State<SignupPage> {
 
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => HomePage()),
+        MaterialPageRoute(builder: (context) => Verification()),
       );
       
     } on FirebaseAuthException catch (e) {
@@ -175,7 +175,7 @@ class _SignupPageState extends State<SignupPage> {
                   if (user != null) {
                     Navigator.pushReplacement(
                       context,
-                      MaterialPageRoute(builder: (context) => HomePage()),
+                      MaterialPageRoute(builder: (context) => Verification()),
                     );
                   }
                 }), // Google Logo
