@@ -1217,6 +1217,8 @@ PODS:
     - nanopb (~> 3.30910.0)
   - FirebaseSharedSwift (11.8.0)
   - Flutter (1.0.0)
+  - fluttertoast (0.0.2):
+    - Flutter
   - google_sign_in_ios (0.0.1):
     - AppAuth (>= 1.7.4)
     - Flutter
@@ -1359,6 +1361,7 @@ DEPENDENCIES:
   - firebase_auth (from `.symlinks/plugins/firebase_auth/ios`)
   - firebase_core (from `.symlinks/plugins/firebase_core/ios`)
   - Flutter (from `Flutter`)
+  - fluttertoast (from `.symlinks/plugins/fluttertoast/ios`)
   - google_sign_in_ios (from `.symlinks/plugins/google_sign_in_ios/darwin`)
 
 SPEC REPOS:
@@ -1395,6 +1398,8 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/firebase_core/ios"
   Flutter:
     :path: Flutter
+  fluttertoast:
+    :path: ".symlinks/plugins/fluttertoast/ios"
   google_sign_in_ios:
     :path: ".symlinks/plugins/google_sign_in_ios/darwin"
 
@@ -1402,10 +1407,10 @@ SPEC CHECKSUMS:
   abseil: d121da9ef7e2ff4cab7666e76c5a3e0915ae08c3
   AppAuth: d4f13a8fe0baf391b2108511793e4b479691fb73
   BoringSSL-GRPC: ca6a8e5d04812fce8ffd6437810c2d46f925eaeb
-  cloud_firestore: 7a6d7b8111fe44d13a0e49783daad5219ce798ff
+  cloud_firestore: 63a98b4e73424e1b66ebb6f289eb1a73514cbc49
   Firebase: d80354ed7f6df5f9aca55e9eb47cc4b634735eaf
-  firebase_auth: c028e89b64d87f04708ed01f0e7691d997b3fa0d
-  firebase_core: 6cbed78b4f298ed103a9fd034e6dbc846320480f
+  firebase_auth: cecfcb5b0655e1cb66a5c45a88ee77811ca93514
+  firebase_core: 6e223dfa350b2edceb729cea505eaaef59330682
   FirebaseAppCheckInterop: 7bf86d55a2b7e9bd91464120eba3e52e4b63b2e2
   FirebaseAuth: ad59a1a7b161e75f74c39f70179d2482d40e2737
   FirebaseAuthInterop: 651756e70d9a0b9160db39ead71fd5507dbb6c84
@@ -1416,7 +1421,8 @@ SPEC CHECKSUMS:
   FirebaseFirestoreInternal: 8c5921c360a70e447bfeefb245f450e8b50e750b
   FirebaseSharedSwift: 672954eac7b141d6954fab9a32d45d6b1d922df8
   Flutter: e0871f40cf51350855a761d2e70bf5af5b9b5de7
-  google_sign_in_ios: 19297361f2c51d7d8ac0201b866ef1fa5d1f94a8
+  fluttertoast: 21eecd6935e7064cc1fcb733a4c5a428f3f24f0f
+  google_sign_in_ios: 4111e87aa5e24a4404f00ea13479f35e571969cc
   GoogleSignIn: d4281ab6cf21542b1cfaff85c191f230b399d2db
   GoogleUtilities: 26a3abef001b6533cf678d3eb38fd3f614b7872d
   "gRPC-C++": 2fa52b3141e7789a28a737f251e0c45b4cb20a87
