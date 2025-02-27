@@ -204,17 +204,24 @@ class _UserSettingsState extends State<UserSettings> {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(content: Text('Password updated successfully!')),
                         );
+
                       } on FirebaseAuthException catch (e) {
                         // Handle authentication errors and display the error message
                         setState(() {
                           errorMessage = "Incorrect old password. Please try again.";
                         });
+                        _oldPasswordController.clear();
+                        _newPasswordController.clear();
+                        _confirmPasswordController.clear();
                       }
                     } else {
                       setState(() {
                         // Set error message if passwords do not match
                         errorMessage = "Passwords do not match. Please try again.";
                       });
+                      _oldPasswordController.clear();
+                        _newPasswordController.clear();
+                        _confirmPasswordController.clear();
                     }
                   },
                   child: const Text('Confirm'),
