@@ -47,13 +47,13 @@ class CompleteProfileState extends State<CompleteProfile> {
   final TextEditingController cityController = TextEditingController();
   final TextEditingController stateController = TextEditingController();
 
+  // Updating the profile information with the new data collected
   void saveProfile() async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
 
     String? userId = Auth().currentUser?.uid;
-
 
     await FirebaseFirestore.instance.collection('users')..doc(userId).update({
       'fullName': fullNameController.text,

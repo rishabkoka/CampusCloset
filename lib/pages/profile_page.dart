@@ -4,6 +4,9 @@ import 'package:share_plus/share_plus.dart'; // Import for sharing feature
 import 'package:url_launcher/url_launcher.dart'; // Import for deep linking
 import 'edit_profile.dart';
 import 'category_selection.dart'; // Import category selection screen
+import 'package:flutter_firebase_project/auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart'; // Import Firestore
+
 
 void main() {
   runApp(const MyApp());
@@ -146,15 +149,43 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
+    String fullName = "Loading...";
+    String email = "Loading...";
+    String phone = "Loading...";
+    String bio = "Loading...";
+    String streetAddress = "Loading...";
+    String city = "Loading...";
+    String state = "Loading...";
+
+  @override
+  void initState() {
+    super.initState();
+    fetchUserProfile();
+  }
+
+  void fetchUserProfile() async {
+    String? userId = Auth().currentUser?.uid;
+    if (userId != null) {
+      DocumentSnapshot userDoc =
+          await FirebaseFirestore.instance.collection('users').doc(userId).get();
+      if (userDoc.exists) {
+        setState(() {
+          fullName = userDoc["fullName"] ?? "No Name";
+          email = userDoc["email"] ?? "No Email";
+          phone = userDoc["phone"] ?? "No Phone";
+          bio = userDoc["bio"] ?? "No Bio";
+          streetAddress = userDoc["streetAddress"] ?? "No Address";
+          city = userDoc["city"] ?? "No City";
+          state = userDoc["state"] ?? "No State";
+          // selectedCategories = List<String>.from(userDoc['categories'] ?? []);
+        });
+      }
+    }
+  }
+
+
   @override
   Widget build(BuildContext context) {
-    final String fullName = "Loading...";
-    final String email = "Loading...";
-    final String phone = "Loading...";
-    final String bio = "Loading...";
-    final String streetAddress = "Loading...";
-    final String city = "Loading...";
-    final String state = "Loading...";
 
     return Scaffold(
       appBar: AppBar(
