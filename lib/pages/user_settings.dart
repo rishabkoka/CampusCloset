@@ -110,111 +110,118 @@ class _UserSettingsState extends State<UserSettings> {
   }
 
   Future<void> passwordPopup(BuildContext context) async {
-  final _oldPasswordController = TextEditingController();
-  final _newPasswordController = TextEditingController();
-  final _confirmPasswordController = TextEditingController();
+    final _oldPasswordController = TextEditingController();
+    final _newPasswordController = TextEditingController();
+    final _confirmPasswordController = TextEditingController();
 
-  // Define a variable to hold error messages
-  String? errorMessage = '';
+    // Define a variable to hold error messages
+    String? errorMessage = '';
 
-  return showDialog<void>(
-    context: context,
-    barrierDismissible: false, // Prevents closing the popup when tapping outside
-    builder: (BuildContext context) {
-      return StatefulBuilder(
-        builder: (BuildContext context, StateSetter setState) {
-          return AlertDialog(
-            title: const Text('Change Password'),
-            content: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  TextField(
-                    controller: _oldPasswordController,
-                    obscureText: true,
-                    decoration: const InputDecoration(
-                      labelText: 'Old Password',
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  TextField(
-                    controller: _newPasswordController,
-                    obscureText: true,
-                    decoration: const InputDecoration(
-                      labelText: 'New Password',
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  TextField(
-                    controller: _confirmPasswordController,
-                    obscureText: true,
-                    decoration: const InputDecoration(
-                      labelText: 'Confirm New Password',
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-
-                  // Show error message if there's any
-                  if (errorMessage != null && errorMessage!.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 5),
-                      child: Text(
-                        errorMessage!,
-                        style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: false, // Prevents closing the popup when tapping outside
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return AlertDialog(
+              title: const Text('Change Password'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    TextField(
+                      controller: _oldPasswordController,
+                      obscureText: true,
+                      decoration: const InputDecoration(
+                        labelText: 'Old Password',
                       ),
                     ),
-                ],
+                    const SizedBox(height: 10),
+                    TextField(
+                      controller: _newPasswordController,
+                      obscureText: true,
+                      decoration: const InputDecoration(
+                        labelText: 'New Password',
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    TextField(
+                      controller: _confirmPasswordController,
+                      obscureText: true,
+                      decoration: const InputDecoration(
+                        labelText: 'Confirm New Password',
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+
+                    // Show error message if there's any
+                    if (errorMessage != null && errorMessage!.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 5),
+                        child: Text(
+                          errorMessage!,
+                          style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                  ],
+                ),
               ),
-            ),
-            actions: <Widget>[
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('Cancel'),
-              ),
-              TextButton(
-                onPressed: () async {
-                  if (_newPasswordController.text == _confirmPasswordController.text) {
-                    try {
-                      // Reauthenticate user with old password
-                      User? user = FirebaseAuth.instance.currentUser;
-                      AuthCredential credential = EmailAuthProvider.credential(
-                        email: user!.email!,
-                        password: _oldPasswordController.text,
-                      );
+              actions: <Widget>[
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('Cancel'),
+                ),
+                TextButton(
+                  onPressed: () async {
+                    if (_newPasswordController.text == _confirmPasswordController.text) {
+                      try {
 
-                      // Reauthenticate the user
-                      await user.reauthenticateWithCredential(credential);
+                        if (_newPasswordController.text == _oldPasswordController.text) {
+                          setState(() {
+                            errorMessage = "New password cannot be the same as the old password.";
+                          });
+                          return; // If passwords are the same, don't update the password
+                        }
+                        // Reauthenticate user with old password
+                        User? user = FirebaseAuth.instance.currentUser;
+                        AuthCredential credential = EmailAuthProvider.credential(
+                          email: user!.email!,
+                          password: _oldPasswordController.text,
+                        );
 
-                      // Update password if reauthentication is successful
-                      await user.updatePassword(_newPasswordController.text);
+                        // Reauthenticate the user
+                        await user.reauthenticateWithCredential(credential);
 
-                      Navigator.of(context).pop(); // Close the dialog
-                      // Optionally show a success message or navigate
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Password updated successfully!')),
-                      );
-                    } on FirebaseAuthException catch (e) {
-                      // Handle authentication errors and display the error message
+                        // Update password if reauthentication is successful
+                        await user.updatePassword(_newPasswordController.text);
+
+                        Navigator.of(context).pop(); // Close the dialog
+                        // Optionally show a success message or navigate
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Password updated successfully!')),
+                        );
+                      } on FirebaseAuthException catch (e) {
+                        // Handle authentication errors and display the error message
+                        setState(() {
+                          errorMessage = "Incorrect old password. Please try again.";
+                        });
+                      }
+                    } else {
                       setState(() {
-                        errorMessage = "Incorrect old password. Please try again.";
+                        // Set error message if passwords do not match
+                        errorMessage = "Passwords do not match. Please try again.";
                       });
                     }
-                  } else {
-                    setState(() {
-                      // Set error message if passwords do not match
-                      errorMessage = "Passwords do not match. Please try again.";
-                    });
-                  }
-                },
-                child: const Text('Confirm'),
-              ),
-            ],
-          );
-        },
-      );
-    },
-  );
-}
+                  },
+                  child: const Text('Confirm'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
 
   Future<void> reportIssuePopup(BuildContext context) async {
     return showDialog<void>(
@@ -393,7 +400,7 @@ class _UserSettingsState extends State<UserSettings> {
                 elevation: 5,
               ),
               onPressed: () => passwordPopup(context),
-              icon: const Icon(Icons.delete, color: Colors.white),
+              icon: const Icon(Icons.password, color: Colors.white),
               label: const Text(
                 'Change Password',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),

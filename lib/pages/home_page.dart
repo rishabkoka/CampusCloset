@@ -1,12 +1,41 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../auth.dart';
 import 'package:flutter/material.dart';
 import './settings_page.dart';
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
   HomePage({Key? key}) : super(key: key);
 
+  @override
+  _HomePageState createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+
   final User? user = Auth().currentUser;
+  String username = "Loading...";
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchUsername();
+  }
+
+  Future<void> _fetchUsername() async {
+    if (user!= null) {
+      DocumentSnapshot userDoc = await FirebaseFirestore.instance.collection('users').doc(user!.uid).get();
+      if (userDoc.exists) {
+        setState(() {
+          username = userDoc['username'] ?? "No username";
+        });
+      } else {
+        setState(() {
+          username = "No username found";
+        });
+      }
+    }
+  }
 
   Future<void> signOut(BuildContext context) async {
     await Auth().signOut();
@@ -14,11 +43,20 @@ class HomePage extends StatelessWidget {
   }
 
   Widget _title() {
-    return const Text('Firebase Auth');
+    return const Text('Home');
   }
 
-  Widget _userUid() {
-    return Text(user?.email ?? 'User email');
+  Widget _userInfo() {
+    return Column(
+      children: [
+        Text(
+          "Welcome, $username",
+          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 5),
+        Text(user?.email ?? 'User email', style: const TextStyle(fontSize: 16)),
+      ],
+    );
   }
 
   Widget _signOutButton(BuildContext context) {
@@ -55,7 +93,8 @@ class HomePage extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.center,
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            _userUid(),
+            _userInfo(),
+            const SizedBox(height: 20),
             _signOutButton(context),
           ],
         ),

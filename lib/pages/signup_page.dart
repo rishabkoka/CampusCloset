@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../auth.dart';
 import './login_page.dart';
 import './verification.dart';
@@ -19,6 +20,7 @@ class _SignupPageState extends State<SignupPage> {
   final TextEditingController _controllerEmail = TextEditingController();
   final TextEditingController _controllerPassword = TextEditingController();
   final TextEditingController _controllerPasswordConfirm = TextEditingController();
+  final TextEditingController _controllerUsername = TextEditingController();
 
   Future<void> createUserWithEmailAndPassword() async {
     if (_controllerPassword.text != _controllerPasswordConfirm.text) {
@@ -28,21 +30,90 @@ class _SignupPageState extends State<SignupPage> {
       return;
     }
     try {
-      await Auth().createUserWithEmailAndPassword(
+      UserCredential userCredential = await Auth().createUserWithEmailAndPassword(
         email: _controllerEmail.text,
         password: _controllerPassword.text,
       );
 
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => Verification()),
-      );
-      
+      User? user = userCredential.user;
+      if (user != null) {
+        //store user in firestore
+        await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
+          'username': _controllerUsername.text,
+          'email': _controllerEmail.text,
+          'uid': user.uid
+        });
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => Verification()),
+        );
+      } 
     } on FirebaseAuthException catch (e) {
       setState(() {
         errorMessage = e.message;
       });
     }
+  }
+
+  // Function to handle Google Sign-Up and prompt for a username
+  Future<void> _handleGoogleSignUp() async {
+    User? user = await Auth().signInWithGoogle();
+
+    if (user != null) {
+      // Check if user already exists in Firestore
+      DocumentSnapshot userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+
+      if (!userDoc.exists) {
+        // Ask for a username if user is new
+        String? username = await _askForUsername();
+        
+        if (username != null && username.isNotEmpty) {
+          // Save username to Firestore
+          await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
+            'email': user.email,
+            'username': username,
+          });
+        }
+      }
+
+      // Navigate to verification page
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => Verification()),
+      );
+    }
+  }
+
+  // Function to prompt the user for a username
+  Future<String?> _askForUsername() async {
+    TextEditingController usernameController = TextEditingController();
+
+    return showDialog<String>(
+      context: context,
+      barrierDismissible: false, // Prevents closing the dialog without input
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Enter a Username'),
+          content: TextField(
+            controller: usernameController,
+            decoration: const InputDecoration(
+              hintText: 'Username',
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () => Navigator.of(context).pop(null),
+            ),
+            TextButton(
+              child: const Text('OK'),
+              onPressed: () => Navigator.of(context).pop(usernameController.text),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -72,6 +143,21 @@ class _SignupPageState extends State<SignupPage> {
               ),
             ),
             const SizedBox(height: 30),
+
+            // Username Input Field
+            TextField(
+              controller: _controllerUsername,
+              decoration: InputDecoration(
+                hintText: "Username",
+                filled: true,
+                fillColor: Colors.white,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(20),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+            ),
+            const SizedBox(height: 15),
 
             // Email Input Field
             TextField(
@@ -170,15 +256,10 @@ class _SignupPageState extends State<SignupPage> {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                _socialLoginButton("assets/images/google_logo.png", () async {
-                  User? user = await Auth().signInWithGoogle();
-                  if (user != null) {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(builder: (context) => Verification()),
-                    );
-                  }
-                }), // Google Logo
+                _socialLoginButton("assets/images/google_logo.png", () => _handleGoogleSignUp()),
+                    
+                  
+                 // Google Logo
                 const SizedBox(width: 20),
                 _socialLoginButton("assets/images/facebook_logo.png", () {
 
