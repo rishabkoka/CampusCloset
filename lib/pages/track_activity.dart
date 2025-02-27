@@ -13,17 +13,12 @@ class TrackActivity extends StatefulWidget {
 
 class TrackActivityState extends State<TrackActivity> with WidgetsBindingObserver {
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  BuildContext? _currentContext;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _currentContext = context;
-      checkLastActiveTime(context);
-  });
+    checkLastActiveTime();
   }
 
   @override
@@ -38,9 +33,7 @@ class TrackActivityState extends State<TrackActivity> with WidgetsBindingObserve
     if (state != AppLifecycleState.resumed) {
       updateLastActiveTime();
     } else {
-      if (_currentContext != null) {
-        checkLastActiveTime(_currentContext!);
-      }
+      checkLastActiveTime();
     }
   }
 
@@ -67,7 +60,7 @@ class TrackActivityState extends State<TrackActivity> with WidgetsBindingObserve
 }
 
 
-  Future<void> checkLastActiveTime(BuildContext context) async {
+  Future<void> checkLastActiveTime() async {
   final User? user = _auth.currentUser;
   if (user != null) {
     try {
