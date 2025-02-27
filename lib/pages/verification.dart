@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import './home_page.dart';
+import './complete_profile.dart';
+
 
 class Verification extends StatefulWidget {
   @override
@@ -442,7 +443,7 @@ class VerificationState extends State<Verification> {
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => HomePage()),
+                  MaterialPageRoute(builder: (context) => CompleteProfile()),
                 );
               },
               child: Text(

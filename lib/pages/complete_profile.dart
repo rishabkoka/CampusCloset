@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'home_page.dart';
+import 'package:flutter_firebase_project/auth.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(const MyApp());
 }
 
@@ -33,25 +37,38 @@ class CompleteProfile extends StatefulWidget {
 }
 
 class CompleteProfileState extends State<CompleteProfile> {
-  // Temporary variables to hold form data
-  String fullName = "";
-  String email = "";
-  String phone = "";
-  String bio = "";
-  String streetAddress = "";
-  String city = "";
-  String state = "";
+  final _formKey = GlobalKey<FormState>();
 
-  void saveProfile() {
-    // Here, you would send these variables to a database or API
-    print("Saving Profile: ");
-    print("Full Name: $fullName");
-    print("Email: $email");
-    print("Phone: $phone");
-    print("Bio: $bio");
-    print("Street Address: $streetAddress");
-    print("City: $city");
-    print("State: $state");
+  final TextEditingController fullNameController = TextEditingController();
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController phoneController = TextEditingController();
+  final TextEditingController bioController = TextEditingController();
+  final TextEditingController streetAddressController = TextEditingController();
+  final TextEditingController cityController = TextEditingController();
+  final TextEditingController stateController = TextEditingController();
+
+  void saveProfile() async {
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    String? userId = Auth().currentUser?.uid;
+
+
+    await FirebaseFirestore.instance.collection('users')..doc(userId).update({
+      'fullName': fullNameController.text,
+      // 'email': emailController.text,
+      'phone': phoneController.text,
+      'bio': bioController.text,
+      'streetAddress': streetAddressController.text,
+      'city': cityController.text,
+      'state': stateController.text,
+    });
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => HomePage()),
+    );
   }
 
   @override
@@ -69,57 +86,28 @@ class CompleteProfileState extends State<CompleteProfile> {
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            // const Text(
-            //   "Complete Profile",
-            //   style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
-            // ),
-            // const SizedBox(height: 8.0),
-            const Text(
-              "Complete your details to continue",
-              style: TextStyle(fontSize: 16, color: Colors.grey),
-            ),
-            const SizedBox(height: 8.0),
-            const Divider(),
-            Form(
-              child: Column(
-                children: [
-                  UserInfoEditField(
-                    text: "Full Name",
-                    onChanged: (value) => setState(() => fullName = value),
-                  ),
-                  UserInfoEditField(
-                    text: "Email",
-                    onChanged: (value) => setState(() => email = value),
-                  ),
-                  UserInfoEditField(
-                    text: "Phone",
-                    onChanged: (value) => setState(() => phone = value),
-                  ),
-                  UserInfoEditField(
-                    text: "Bio",
-                    onChanged: (value) => setState(() => bio = value),
-                  ),
-                  UserInfoEditField(
-                    text: "Street Address",
-                    onChanged: (value) => setState(() => streetAddress = value),
-                  ),
-                  UserInfoEditField(
-                    text: "City",
-                    onChanged: (value) => setState(() => city = value),
-                  ),
-                  UserInfoEditField(
-                    text: "State",
-                    onChanged: (value) => setState(() => state = value),
-                  ),
-                ],
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              const Text(
+                "Complete your details to continue",
+                style: TextStyle(fontSize: 16, color: Colors.grey),
               ),
-            ),
-            const SizedBox(height: 16.0),
-            button("Save Profile", Colors.black, Colors.white, saveProfile, 50),
-          ],
+              const SizedBox(height: 8.0),
+              const Divider(),
+              UserInfoEditField(text: "Full Name", controller: fullNameController),
+              // UserInfoEditField(text: "Email", controller: emailController),
+              UserInfoEditField(text: "Phone", controller: phoneController),
+              UserInfoEditField(text: "Bio", controller: bioController),
+              UserInfoEditField(text: "Street Address", controller: streetAddressController),
+              UserInfoEditField(text: "City", controller: cityController),
+              UserInfoEditField(text: "State", controller: stateController),
+              const SizedBox(height: 16.0),
+              button("Save Profile", Colors.black, Colors.white, saveProfile, 50),
+            ],
+          ),
         ),
       ),
     );
@@ -128,9 +116,9 @@ class CompleteProfileState extends State<CompleteProfile> {
 
 class UserInfoEditField extends StatelessWidget {
   final String text;
-  final Function(String) onChanged;
+  final TextEditingController controller;
 
-  const UserInfoEditField({super.key, required this.text, required this.onChanged});
+  const UserInfoEditField({super.key, required this.text, required this.controller});
 
   @override
   Widget build(BuildContext context) {
@@ -145,6 +133,7 @@ class UserInfoEditField extends StatelessWidget {
           ),
           const SizedBox(height: 6.0),
           TextFormField(
+            controller: controller,
             decoration: InputDecoration(
               hintText: "Enter $text",
               filled: true,
@@ -155,7 +144,12 @@ class UserInfoEditField extends StatelessWidget {
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
-            onChanged: onChanged,
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return "$text is required";
+              }
+              return null;
+            },
           ),
         ],
       ),
