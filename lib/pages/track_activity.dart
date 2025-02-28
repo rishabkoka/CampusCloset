@@ -1,6 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import '../main.dart';
+import './login_page.dart';
 
 class TrackActivity extends StatefulWidget {
   final Widget child;
@@ -80,7 +82,7 @@ class TrackActivityState extends State<TrackActivity> with WidgetsBindingObserve
           //if (difference.inHours >= 12) {
           if (difference.inSeconds >= 5) {
             await _auth.signOut();
-            Navigator.pushReplacementNamed(context, '/login');
+            navigatorKey.currentState?.push(MaterialPageRoute(builder: (context) => LoginPage(),));
           }
         }
       } else {
