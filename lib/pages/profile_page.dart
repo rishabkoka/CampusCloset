@@ -266,7 +266,9 @@ class _ProfilePageState extends State<ProfilePage> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => const EditProfile()),
-                );
+                ).then((_) {
+                  fetchUserProfile(); // Refresh profile after returning
+                });
               }, 44),
             ],
           ),
