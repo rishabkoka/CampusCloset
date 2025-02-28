@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_firebase_project/pages/send_email.dart';
 import '../auth.dart';
 import './login_page.dart';
 import './verification.dart';
@@ -43,6 +44,9 @@ class _SignupPageState extends State<SignupPage> {
           'email': _controllerEmail.text,
           'uid': user.uid
         });
+
+        //send confirmation email
+        sendConfirmationEmail(_controllerEmail.text);
 
         Navigator.pushReplacement(
           context,

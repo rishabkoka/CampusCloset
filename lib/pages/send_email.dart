@@ -57,3 +57,22 @@ This message was sent automatically from Campus Closet.
   }
 }
 
+Future<void> sendConfirmationEmail(String recipientEmail) async {
+  String username = "closetcampus01@gmail.com";  // Your Gmail
+  String password = "rhbk relj axqc kjrl";  // App Password (Replace with secure storage)
+
+  final smtpServer = gmail(username, password);
+
+  final message = Message()
+    ..from = Address(username, "Campus Closet")
+    ..recipients.add(recipientEmail)
+    ..subject = "Welcome to Campus Closet! 🎉"
+    ..text = "Hi, \n\nYou've signed up for Campus Closet! We are so happy to have you. Enjoy!";
+
+  try {
+    await send(message, smtpServer);
+    print("✅ Confirmation email sent successfully to $recipientEmail");
+  } catch (e) {
+    print("❌ Failed to send invite email: $e");
+  }
+}

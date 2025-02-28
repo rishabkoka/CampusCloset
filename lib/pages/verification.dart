@@ -335,7 +335,7 @@ class VerificationState extends State<Verification> {
                   ),
                 ),
             ),
-            Row(
+            Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 ElevatedButton(
@@ -356,11 +356,11 @@ class VerificationState extends State<Verification> {
                     ),
                     ),
                 ),
-                const SizedBox(width: 20),
+                const SizedBox(height: 20),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Color.fromARGB(255, 240, 238, 227),
-                    minimumSize: const Size(150, 50),
+                    minimumSize: const Size(100, 50),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(30),
                     ),
