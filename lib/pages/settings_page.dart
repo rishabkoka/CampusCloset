@@ -62,7 +62,7 @@ class SettingsPage extends StatelessWidget {
                       color: Colors.black,
                     ),
                   ),
-                  const SizedBox(width: 220.0),
+                  const SizedBox(width: 200.0),
                   Icon(
                     Icons.arrow_forward, // Right arrow icon
                     size: 24,
@@ -95,14 +95,14 @@ class SettingsPage extends StatelessWidget {
                   ),
                   const SizedBox(width: 30.0),
                   Text(
-                    'User',
+                    'User   ',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                       color: Colors.black,
                     ),
                   ),
-                  const SizedBox(width: 235.0),
+                  const SizedBox(width: 200.0),
                   Icon(
                     Icons.arrow_forward, // Right arrow icon
                     size: 24,

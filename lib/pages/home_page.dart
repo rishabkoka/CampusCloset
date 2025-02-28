@@ -43,7 +43,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _title() {
-    return const Text('Home');
+    return const Text('CampusCloset', style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold));
   }
 
   Widget _userInfo() {
@@ -59,17 +59,12 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _signOutButton(BuildContext context) {
-    return ElevatedButton(
-      onPressed: () => signOut(context),
-      child: const Text('Sign Out'),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Color(0xFFF4F1E3),
       appBar: AppBar(
+        backgroundColor: Color(0xFFF4F1E3),
         automaticallyImplyLeading: false,
         title: _title(),
         actions: [
@@ -95,7 +90,6 @@ class _HomePageState extends State<HomePage> {
           children: <Widget>[
             _userInfo(),
             const SizedBox(height: 20),
-            _signOutButton(context),
           ],
         ),
       ),
