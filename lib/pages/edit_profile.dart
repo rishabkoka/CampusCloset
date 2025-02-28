@@ -1,4 +1,7 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_firebase_project/auth.dart';
+import 'profile_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -33,27 +36,57 @@ class EditProfile extends StatefulWidget {
 }
 
 class EditProfileState extends State<EditProfile> {
-  String fullName = "";
-  String email = "";
-  String phone = "";
-  String bio = "";
-  String streetAddress = "";
-  String city = "";
-  String state = "";
+  final _formKey = GlobalKey<FormState>();
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final TextEditingController fullNameController = TextEditingController();
+  final TextEditingController phoneController = TextEditingController();
+  final TextEditingController bioController = TextEditingController();
+  final TextEditingController streetController = TextEditingController();
+  final TextEditingController cityController = TextEditingController();
+  final TextEditingController stateController = TextEditingController();
 
-  void saveProfile() {
-    print("Profile Saved: ");
-    print("Full Name: $fullName");
-    print("Email: $email");
-    print("Phone: $phone");
-    print("Bio: $bio");
-    print("Street Address: $streetAddress");
-    print("City: $city");
-    print("State: $state");
+  @override
+  void initState() {
+    super.initState();
+    loadProfile();
   }
 
-  void cancelEdit() {
-    Navigator.pop(context);
+  Future<void> loadProfile() async {
+    String? userId = Auth().currentUser?.uid;
+    DocumentSnapshot userDoc = await _firestore.collection('users').doc(userId).get();
+    if (userDoc.exists) {
+      var data = userDoc.data() as Map<String, dynamic>;
+      setState(() {
+        fullNameController.text = data['fullName'] ?? '';
+        phoneController.text = data['phone'] ?? '';
+        bioController.text = data['bio'] ?? '';
+        streetController.text = data['streetAddress'] ?? '';
+        cityController.text = data['city'] ?? '';
+        stateController.text = data['state'] ?? '';
+      });
+    }
+  }
+
+  void saveProfile() async {
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    String? userId = Auth().currentUser?.uid;
+
+    await _firestore.collection('users').doc(userId).update({
+      'fullName': fullNameController.text,
+      'phone': phoneController.text,
+      'bio': bioController.text,
+      'streetAddress': streetController.text,
+      'city': cityController.text,
+      'state': stateController.text,
+    });
+
+    Navigator.pop(
+      context,
+      MaterialPageRoute(builder: (context) => const ProfilePage()),
+    );
   }
 
   @override
@@ -71,62 +104,27 @@ class EditProfileState extends State<EditProfile> {
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            const Text(
-              "Update your profile information",
-              style: TextStyle(fontSize: 16, color: Colors.grey),
-            ),
-            const SizedBox(height: 8.0),
-            const Divider(),
-            Form(
-              child: Column(
-                children: [
-                  UserInfoEditField(
-                    text: "Full Name",
-                    onChanged: (value) => setState(() => fullName = value),
-                  ),
-                  UserInfoEditField(
-                    text: "Email",
-                    onChanged: (value) => setState(() => email = value),
-                  ),
-                  UserInfoEditField(
-                    text: "Phone",
-                    onChanged: (value) => setState(() => phone = value),
-                  ),
-                  UserInfoEditField(
-                    text: "Bio",
-                    onChanged: (value) => setState(() => bio = value),
-                  ),
-                  UserInfoEditField(
-                    text: "Street Address",
-                    onChanged: (value) => setState(() => streetAddress = value),
-                  ),
-                  UserInfoEditField(
-                    text: "City",
-                    onChanged: (value) => setState(() => city = value),
-                  ),
-                  UserInfoEditField(
-                    text: "State",
-                    onChanged: (value) => setState(() => state = value),
-                  ),
-                ],
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              const Text(
+                "Update your profile information",
+                style: TextStyle(fontSize: 16, color: Colors.grey),
               ),
-            ),
-            const SizedBox(height: 16.0),
-            Row(
-              children: [
-                Expanded(
-                  child: button("Cancel", Colors.grey, Colors.black, cancelEdit, 50),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: button("Save", Colors.black, Colors.white, saveProfile, 50),
-                ),
-              ],
-            ),
-          ],
+              const SizedBox(height: 8.0),
+              const Divider(),
+              UserInfoEditField(text: "Full Name", controller: fullNameController),
+              UserInfoEditField(text: "Phone", controller: phoneController),
+              UserInfoEditField(text: "Bio", controller: bioController),
+              UserInfoEditField(text: "Street Address", controller: streetController),
+              UserInfoEditField(text: "City", controller: cityController),
+              UserInfoEditField(text: "State", controller: stateController),
+              const SizedBox(height: 16.0),
+              button("Save Profile", Colors.black, Colors.white, saveProfile, 50),
+            ],
+          ),
         ),
       ),
     );
@@ -135,9 +133,9 @@ class EditProfileState extends State<EditProfile> {
 
 class UserInfoEditField extends StatelessWidget {
   final String text;
-  final Function(String) onChanged;
+  final TextEditingController controller;
 
-  const UserInfoEditField({super.key, required this.text, required this.onChanged});
+  const UserInfoEditField({super.key, required this.text, required this.controller});
 
   @override
   Widget build(BuildContext context) {
@@ -152,6 +150,7 @@ class UserInfoEditField extends StatelessWidget {
           ),
           const SizedBox(height: 6.0),
           TextFormField(
+            controller: controller,
             decoration: InputDecoration(
               hintText: "Enter $text",
               filled: true,
@@ -162,7 +161,12 @@ class UserInfoEditField extends StatelessWidget {
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
-            onChanged: onChanged,
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return "$text is required";
+              }
+              return null;
+            },
           ),
         ],
       ),
