@@ -225,7 +225,7 @@ class VerificationState extends State<Verification> {
                       verificationId: _verificationId,
                       smsCode: otp,
                     );
-                    await _auth.signInWithCredential(credential);
+                    //await _auth.signInWithCredential(credential);
                     Navigator.of(context).pop(); // Close OTP dialog
                     setState(() {
                       isPhoneVerified = true;

@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../auth.dart';
 import 'package:flutter/material.dart';
 import './settings_page.dart';
+import './closet.dart'; // Import the ClosetPage
 
 class HomePage extends StatefulWidget {
   HomePage({Key? key}) : super(key: key);
@@ -12,7 +13,6 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-
   final User? user = Auth().currentUser;
   String username = "Loading...";
 
@@ -23,8 +23,9 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _fetchUsername() async {
-    if (user!= null) {
-      DocumentSnapshot userDoc = await FirebaseFirestore.instance.collection('users').doc(user!.uid).get();
+    if (user != null) {
+      DocumentSnapshot userDoc =
+          await FirebaseFirestore.instance.collection('users').doc(user!.uid).get();
       if (userDoc.exists) {
         setState(() {
           username = userDoc['username'] ?? "No username";
@@ -43,7 +44,8 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _title() {
-    return const Text('CampusCloset', style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold));
+    return const Text('CampusCloset',
+        style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold));
   }
 
   Widget _userInfo() {
@@ -65,20 +67,58 @@ class _HomePageState extends State<HomePage> {
       backgroundColor: Color(0xFFF4F1E3),
       appBar: AppBar(
         backgroundColor: Color(0xFFF4F1E3),
-        automaticallyImplyLeading: false,
         title: _title(),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.settings),
-            iconSize: 35.0,
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const SettingsPage()),
-              );
-            }
-          ),
-        ],
+      ),
+      drawer: Drawer( // Sidebar Menu
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            DrawerHeader(
+              decoration: BoxDecoration(color: Colors.blueAccent),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    username,
+                    style: TextStyle(color: Colors.white, fontSize: 20),
+                  ),
+                  SizedBox(height: 10),
+                  Text(
+                    user?.email ?? 'User email',
+                    style: TextStyle(color: Colors.white70),
+                  ),
+                ],
+              ),
+            ),
+            ListTile(
+              leading: Icon(Icons.cabin),
+              title: Text('My Closet'),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => ClosetPage()),
+                );
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.settings),
+              title: Text('Settings'),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => SettingsPage()),
+                );
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.logout),
+              title: Text('Sign Out'),
+              onTap: () {
+                signOut(context);
+              },
+            ),
+          ],
+        ),
       ),
       body: Container(
         height: double.infinity,
