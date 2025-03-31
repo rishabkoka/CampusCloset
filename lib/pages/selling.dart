@@ -4,6 +4,8 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:uuid/uuid.dart';
+import '../auth.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class SellingPage extends StatefulWidget {
   @override
@@ -69,6 +71,16 @@ class _SellingPageState extends State<SellingPage> {
       return;
     }
 
+    // Get the current user
+    User? user = Auth().currentUser;
+
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("You must be logged in to sell an item")),
+      );
+      return;
+    }
+
     // Upload main image
     String? mainImageUrl;
     if (_mainImage != null) {
@@ -87,6 +99,7 @@ class _SellingPageState extends State<SellingPage> {
     }
 
     await FirebaseFirestore.instance.collection('items').add({
+      'userId': user.uid,
       'brand': _brandController.text,
       'condition': _conditionController.text,
       'size': _sizeController.text,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'selling.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class ClosetPage extends StatefulWidget {
   const ClosetPage({Key? key}) : super(key: key);
@@ -40,7 +41,9 @@ class _ClosetPageState extends State<ClosetPage> {
         ],
       ),
       body: StreamBuilder(
-        stream: FirebaseFirestore.instance.collection('items').snapshots(),
+        stream: FirebaseFirestore.instance.collection('items')
+        .where('userId', isEqualTo: FirebaseAuth.instance.currentUser?.uid)
+        .snapshots(),
         builder: (context, AsyncSnapshot<QuerySnapshot> snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
