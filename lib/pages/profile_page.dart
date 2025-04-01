@@ -42,6 +42,7 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   List<String> selectedCategories = [];
+  File? _profilePic;
 
   void updateCategories(List<String> categories) {
     setState(() {
@@ -215,6 +216,53 @@ class _ProfilePageState extends State<ProfilePage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircleAvatar(
+                    radius: 50,
+                    backgroundImage: _profilePic != null
+                      ? FileImage(_profilePic!)
+                      : AssetImage('assets/images/defaultprofilepic.jpg') as ImageProvider,
+                  ),
+                  SizedBox(width: 20),
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      ElevatedButton(
+                        onPressed: () {},
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.black,
+                          foregroundColor: Colors.white,
+                          minimumSize: Size(30, 30),
+                        ),
+                        child: Text(
+                          'Take with Camera',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: 0),
+                      ElevatedButton(
+                        onPressed: () {},
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.black,
+                          foregroundColor: Colors.white,
+                          minimumSize: Size(30, 30),
+                        ),
+                        child: Text(
+                          'Choose from Library',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ]
+                  ),
+                ]
+              ),
+              SizedBox(height: 8),
               ProfileCard(title: "Personal Info", children: [
                 ProfileInfoRow(label: "Full Name", value: fullName),
                 ProfileInfoRow(label: "Email", value: email),

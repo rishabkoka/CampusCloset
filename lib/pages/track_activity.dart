@@ -79,8 +79,8 @@ class TrackActivityState extends State<TrackActivity> with WidgetsBindingObserve
           final DateTime now = DateTime.now();
           final Duration difference = now.difference(lastActive);
           //print(difference.inSeconds);
-          //if (difference.inHours >= 12) {
-          if (difference.inSeconds >= 5) {
+          if (difference.inHours >= 12) {
+          //if (difference.inSeconds >= 5) {
             await _auth.signOut();
             navigatorKey.currentState?.push(MaterialPageRoute(builder: (context) => LoginPage(),));
           }
