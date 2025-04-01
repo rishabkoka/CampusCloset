@@ -107,7 +107,7 @@ class _HomePageState extends State<HomePage> {
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => SellingPage()),  // Navigate to SellingPage (where users add items)
+                  MaterialPageRoute(builder: (context) => ClosetPage()),  // Navigate to SellingPage (where users add items)
                 );
               },
             ),
