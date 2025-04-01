@@ -1,9 +1,11 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../auth.dart';
 import 'package:flutter/material.dart';
-import './settings_page.dart';
-import './closet.dart'; // Import the ClosetPage
+import './closet.dart'; // Import ClosetPage for MyCloset
+import './swipe_page.dart'; // Import SwipePage for Home
+import './chat_page.dart';  // Import ChatPage
+import './settings_page.dart'; // Sidebar Menu
+import './selling.dart';  // SellingPage for adding items
 
 class HomePage extends StatefulWidget {
   HomePage({Key? key}) : super(key: key);
@@ -13,8 +15,20 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  final User? user = Auth().currentUser;
+  final User? user = FirebaseAuth.instance.currentUser;
   String username = "Loading...";
+  int _selectedIndex = 0;  // Default page is MyCloset
+
+  // Pages for Bottom Navigation Bar
+  final List<Widget> _pages = [
+    const ClosetPage(),  // My Closet
+    const SwipePage(),   // Home (Swipe Items)
+    const ChatPage(      // Chat
+      chatRoomId: "chatRoomId", 
+      currentUserId: "userId", 
+      otherUserId: "userId"
+    ),
+  ];
 
   @override
   void initState() {
@@ -22,6 +36,7 @@ class _HomePageState extends State<HomePage> {
     _fetchUsername();
   }
 
+  // Fetch user info from Firestore
   Future<void> _fetchUsername() async {
     if (user != null) {
       DocumentSnapshot userDoc =
@@ -38,35 +53,31 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  // Handle navigation item tap (Bottom Nav Bar)
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+  }
+
+  // Sign out method
   Future<void> signOut(BuildContext context) async {
-    await Auth().signOut();
+    await FirebaseAuth.instance.signOut();
     Navigator.pushReplacementNamed(context, '/login');
   }
 
+  // Title widget for the app bar
   Widget _title() {
     return const Text('CampusCloset',
         style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold));
   }
 
-  Widget _userInfo() {
-    return Column(
-      children: [
-        Text(
-          "Welcome, $username",
-          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 5),
-        Text(user?.email ?? 'User email', style: const TextStyle(fontSize: 16)),
-      ],
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xFFF4F1E3),
+      backgroundColor: const Color(0xFFF4F1E3),
       appBar: AppBar(
-        backgroundColor: Color(0xFFF4F1E3),
+        backgroundColor: const Color(0xFFF4F1E3),
         title: _title(),
       ),
       drawer: Drawer( // Sidebar Menu
@@ -74,45 +85,45 @@ class _HomePageState extends State<HomePage> {
           padding: EdgeInsets.zero,
           children: [
             DrawerHeader(
-              decoration: BoxDecoration(color: Colors.blueAccent),
+              decoration: const BoxDecoration(color: Colors.blueAccent),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     username,
-                    style: TextStyle(color: Colors.white, fontSize: 20),
+                    style: const TextStyle(color: Colors.white, fontSize: 20),
                   ),
-                  SizedBox(height: 10),
+                  const SizedBox(height: 10),
                   Text(
                     user?.email ?? 'User email',
-                    style: TextStyle(color: Colors.white70),
+                    style: const TextStyle(color: Colors.white70),
                   ),
                 ],
               ),
             ),
             ListTile(
-              leading: Icon(Icons.cabin),
-              title: Text('My Closet'),
+              leading: const Icon(Icons.cabin),
+              title: const Text('My Closet'),
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => ClosetPage()),
+                  MaterialPageRoute(builder: (context) => SellingPage()),  // Navigate to SellingPage (where users add items)
                 );
               },
             ),
             ListTile(
-              leading: Icon(Icons.settings),
-              title: Text('Settings'),
+              leading: const Icon(Icons.settings),
+              title: const Text('Settings'),
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => SettingsPage()),
+                  MaterialPageRoute(builder: (context) => const SettingsPage()),
                 );
               },
             ),
             ListTile(
-              leading: Icon(Icons.logout),
-              title: Text('Sign Out'),
+              leading: const Icon(Icons.logout),
+              title: const Text('Sign Out'),
               onTap: () {
                 signOut(context);
               },
@@ -120,18 +131,25 @@ class _HomePageState extends State<HomePage> {
           ],
         ),
       ),
-      body: Container(
-        height: double.infinity,
-        width: double.infinity,
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            _userInfo(),
-            const SizedBox(height: 20),
-          ],
-        ),
+      body: _pages[_selectedIndex],  // Show the current page based on selected index
+
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _selectedIndex,
+        onTap: _onItemTapped,
+        items: const <BottomNavigationBarItem>[
+          BottomNavigationBarItem(
+            icon: Icon(Icons.cabin),
+            label: 'My Closet',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: 'Home',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.chat),
+            label: 'Chat',
+          ),
+        ],
       ),
     );
   }
