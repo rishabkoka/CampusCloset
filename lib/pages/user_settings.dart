@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:url_launcher/url_launcher.dart'; 
-import 'package:flutter_firebase_project/pages/send_email.dart'; // Update path if needed
-
-
-
+import 'package:flutter_firebase_project/pages/send_email.dart'; // Update path as needed
 
 class UserSettings extends StatefulWidget {
   const UserSettings({Key? key}) : super(key: key);
@@ -17,26 +14,74 @@ class UserSettings extends StatefulWidget {
 class _UserSettingsState extends State<UserSettings> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final TextEditingController inviteController = TextEditingController();
-  final TextEditingController issueController = TextEditingController(); // Controller for issue reporting
+  final TextEditingController issueController = TextEditingController();
+  final currentUserId = FirebaseAuth.instance.currentUser!.uid;
+  List<DocumentSnapshot> blockedUsers = [];
 
+  @override
+  void initState() {
+    super.initState();
+    fetchBlockedUsers();
+  }
+
+  Future<void> fetchBlockedUsers() async {
+    final snapshot = await FirebaseFirestore.instance
+        .collection('blocked_users')
+        .where('blockedBy', isEqualTo: currentUserId)
+        .get();
+    setState(() {
+      blockedUsers = snapshot.docs;
+    });
+  }
+
+  Future<void> unblockUser(String docId) async {
+    await FirebaseFirestore.instance.collection('blocked_users').doc(docId).delete();
+    fetchBlockedUsers(); // refresh list
+    Fluttertoast.showToast(msg: "✅ User unblocked!");
+  }
+
+  Future<void> inviteUser() async {
+    String input = inviteController.text.trim();
+    if (input.isEmpty) {
+      Fluttertoast.showToast(msg: "Please enter an email.");
+      return;
+    }
+
+    try {
+      await sendInviteEmail(input);
+      Fluttertoast.showToast(msg: "✅ Invitation sent to $input!");
+      inviteController.clear();
+    } catch (e) {
+      Fluttertoast.showToast(msg: "❌ Failed to send invitation: $e");
+    }
+  }
+
+  Future<void> sendReport(String issueText) async {
+    if (issueText.isEmpty) {
+      Fluttertoast.showToast(msg: "Please enter an issue before submitting.");
+      return;
+    }
+
+    try {
+      await sendIssueReport(issueText);
+      Fluttertoast.showToast(msg: "✅ Issue reported successfully!");
+    } catch (e) {
+      Fluttertoast.showToast(msg: "❌ Failed to send report: $e");
+    }
+  }
 
   Future<void> logoutPopup(BuildContext context) async {
     return showDialog<void>(
       context: context,
-      barrierDismissible: false,
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text('Log Out'),
           content: const Text('Are you sure you want to log out?'),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel'),
-            ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
             TextButton(
               onPressed: () async {
-                await FirebaseAuth.instance.signOut();
-                Navigator.of(context).pop();
+                await _auth.signOut();
                 Navigator.pushReplacementNamed(context, '/login');
               },
               child: const Text('Logout'),
@@ -54,259 +99,145 @@ class _UserSettingsState extends State<UserSettings> {
 
     await showDialog(
       context: context,
-      builder: (BuildContext context) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return AlertDialog(
-              title: const Text('Delete Account'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(
-                    controller: emailController,
-                    decoration: InputDecoration(
-                      labelText: 'Email',
-                      errorText: errorMessage,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  TextField(
-                    controller: passwordController,
-                    obscureText: true,
-                    decoration: InputDecoration(
-                      labelText: 'Password',
-                      errorText: errorMessage,
-                    ),
-                  ),
-                ],
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Text('Delete Account'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: emailController,
+                decoration: InputDecoration(labelText: 'Email', errorText: errorMessage),
               ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Cancel'),
-                ),
-                ElevatedButton(
-                  onPressed: () async {
-                    try {
-                      User user = _auth.currentUser!;
-                      AuthCredential credential = EmailAuthProvider.credential(
-                        email: emailController.text.trim(),
-                        password: passwordController.text.trim(),
-                      );
-                      await user.reauthenticateWithCredential(credential);
-                      await user.delete();
-                      Navigator.pop(context);
-                      Navigator.pushReplacementNamed(context, '/login');
-                    } on FirebaseAuthException catch (e) {
-                      setState(() {
-                        errorMessage = e.message;
-                      });
-                    }
-                  },
-                  child: const Text('Delete'),
-                )
-              ],
-            );
-          },
-        );
-      }
+              const SizedBox(height: 10),
+              TextField(
+                controller: passwordController,
+                obscureText: true,
+                decoration: InputDecoration(labelText: 'Password', errorText: errorMessage),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+            ElevatedButton(
+              onPressed: () async {
+                try {
+                  final user = _auth.currentUser!;
+                  final credential = EmailAuthProvider.credential(
+                    email: emailController.text.trim(),
+                    password: passwordController.text.trim(),
+                  );
+                  await user.reauthenticateWithCredential(credential);
+                  await user.delete();
+                  Navigator.pushReplacementNamed(context, '/login');
+                } on FirebaseAuthException catch (e) {
+                  setState(() => errorMessage = e.message);
+                }
+              },
+              child: const Text('Delete'),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
   Future<void> passwordPopup(BuildContext context) async {
-    final _oldPasswordController = TextEditingController();
-    final _newPasswordController = TextEditingController();
-    final _confirmPasswordController = TextEditingController();
+    final oldPassCtrl = TextEditingController();
+    final newPassCtrl = TextEditingController();
+    final confirmCtrl = TextEditingController();
+    String? errorMessage;
 
-    // Define a variable to hold error messages
-    String? errorMessage = '';
-
-    return showDialog<void>(
+    return showDialog(
       context: context,
-      barrierDismissible: false, // Prevents closing the popup when tapping outside
-      builder: (BuildContext context) {
-        return StatefulBuilder(
-          builder: (BuildContext context, StateSetter setState) {
-            return AlertDialog(
-              title: const Text('Change Password'),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: <Widget>[
-                    TextField(
-                      controller: _oldPasswordController,
-                      obscureText: true,
-                      decoration: const InputDecoration(
-                        labelText: 'Old Password',
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    TextField(
-                      controller: _newPasswordController,
-                      obscureText: true,
-                      decoration: const InputDecoration(
-                        labelText: 'New Password',
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    TextField(
-                      controller: _confirmPasswordController,
-                      obscureText: true,
-                      decoration: const InputDecoration(
-                        labelText: 'Confirm New Password',
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-
-                    // Show error message if there's any
-                    if (errorMessage != null && errorMessage!.isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 5),
-                        child: Text(
-                          errorMessage!,
-                          style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                  ],
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Text('Change Password'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(obscureText: true, controller: oldPassCtrl, decoration: const InputDecoration(labelText: 'Old Password')),
+              TextField(obscureText: true, controller: newPassCtrl, decoration: const InputDecoration(labelText: 'New Password')),
+              TextField(obscureText: true, controller: confirmCtrl, decoration: const InputDecoration(labelText: 'Confirm New Password')),
+              if (errorMessage != null && errorMessage!.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8.0),
+                  child: Text(errorMessage!, style: const TextStyle(color: Colors.red)),
                 ),
-              ),
-              actions: <Widget>[
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('Cancel'),
-                ),
-                TextButton(
-                  onPressed: () async {
-                    if (_newPasswordController.text == _confirmPasswordController.text) {
-                      try {
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+            TextButton(
+              onPressed: () async {
+                if (newPassCtrl.text != confirmCtrl.text) {
+                  setState(() => errorMessage = "Passwords do not match.");
+                  return;
+                }
 
-                        if (_newPasswordController.text == _oldPasswordController.text) {
-                          setState(() {
-                            errorMessage = "New password cannot be the same as the old password.";
-                          });
-                          return; // If passwords are the same, don't update the password
-                        }
-                        // Reauthenticate user with old password
-                        User? user = FirebaseAuth.instance.currentUser;
-                        AuthCredential credential = EmailAuthProvider.credential(
-                          email: user!.email!,
-                          password: _oldPasswordController.text,
-                        );
+                if (oldPassCtrl.text == newPassCtrl.text) {
+                  setState(() => errorMessage = "New password can't be same as old.");
+                  return;
+                }
 
-                        // Reauthenticate the user
-                        await user.reauthenticateWithCredential(credential);
-
-                        // Update password if reauthentication is successful
-                        await user.updatePassword(_newPasswordController.text);
-
-                        Navigator.of(context).pop(); // Close the dialog
-                        // Optionally show a success message or navigate
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Password updated successfully!')),
-                        );
-
-                      } on FirebaseAuthException catch (e) {
-                        // Handle authentication errors and display the error message
-                        setState(() {
-                          errorMessage = "Incorrect old password. Please try again.";
-                        });
-                        _oldPasswordController.clear();
-                        _newPasswordController.clear();
-                        _confirmPasswordController.clear();
-                      }
-                    } else {
-                      setState(() {
-                        // Set error message if passwords do not match
-                        errorMessage = "Passwords do not match. Please try again.";
-                      });
-                      _oldPasswordController.clear();
-                        _newPasswordController.clear();
-                        _confirmPasswordController.clear();
-                    }
-                  },
-                  child: const Text('Confirm'),
-                ),
-              ],
-            );
-          },
-        );
-      },
+                try {
+                  final user = _auth.currentUser!;
+                  final credential = EmailAuthProvider.credential(
+                    email: user.email!,
+                    password: oldPassCtrl.text,
+                  );
+                  await user.reauthenticateWithCredential(credential);
+                  await user.updatePassword(newPassCtrl.text);
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("Password changed successfully")),
+                  );
+                } catch (e) {
+                  setState(() => errorMessage = "Incorrect old password or error occurred.");
+                }
+              },
+              child: const Text('Confirm'),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
   Future<void> reportIssuePopup(BuildContext context) async {
     return showDialog<void>(
       context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text("Report an Issue"),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text("Describe the issue you are facing:"),
-              const SizedBox(height: 10),
-              TextField(
-                controller: issueController,
-                maxLines: 4,
-                decoration: InputDecoration(
-                  hintText: "Enter your issue here...",
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                ),
+      builder: (BuildContext context) => AlertDialog(
+        title: const Text("Report an Issue"),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text("Describe the issue you are facing:"),
+            const SizedBox(height: 10),
+            TextField(
+              controller: issueController,
+              maxLines: 4,
+              decoration: InputDecoration(
+                hintText: "Enter your issue here...",
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
               ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text("Cancel"),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                sendReport(issueController.text);
-                issueController.clear();
-                Navigator.pop(context);
-              },
-              child: const Text("Submit"),
             ),
           ],
-        );
-      },
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
+          ElevatedButton(
+            onPressed: () {
+              sendReport(issueController.text);
+              issueController.clear();
+              Navigator.pop(context);
+            },
+            child: const Text("Submit"),
+          ),
+        ],
+      ),
     );
   }
-
-  Future<void> sendReport(String issueText) async {
-  if (issueText.isEmpty) {
-    Fluttertoast.showToast(msg: "Please enter an issue before submitting.");
-    return;
-  }
-
-  try {
-    await sendIssueReport(issueText);
-    Fluttertoast.showToast(msg: "✅ Issue reported successfully!");
-  } catch (e) {
-    Fluttertoast.showToast(msg: "❌ Failed to send report: $e");
-  }
-}
-
-
-
- Future<void> inviteUser() async {
-  String input = inviteController.text.trim();
-  if (input.isEmpty) {
-    Fluttertoast.showToast(msg: "Please enter an email.");
-    return;
-  }
-
-  try {
-    await sendInviteEmail(input);
-    Fluttertoast.showToast(msg: "✅ Invitation sent to $input!");
-    inviteController.clear();
-  } catch (e) {
-    Fluttertoast.showToast(msg: "❌ Failed to send invitation: $e");
-  }
-}
-
-
 
   @override
   Widget build(BuildContext context) {
@@ -315,143 +246,122 @@ class _UserSettingsState extends State<UserSettings> {
       appBar: AppBar(
         backgroundColor: const Color(0xFFF4F1E3),
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: const Text(
-          "User Settings",
-          style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black),
-        ),
+        title: const Text("User Settings", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black)),
         centerTitle: true,
+        leading: IconButton(icon: const Icon(Icons.arrow_back, color: Colors.black), onPressed: () => Navigator.pop(context)),
       ),
-      body: Padding(
+      body: ListView(
         padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Center(
+        children: [
+          const Center(
+            child: Column(
+              children: [
+                Icon(Icons.account_circle, size: 80, color: Colors.black54),
+                SizedBox(height: 8),
+                Text('User', style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Colors.black)),
+              ],
+            ),
+          ),
+          const SizedBox(height: 30),
+
+          /// Invite Someone
+          Card(
+            elevation: 3,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
               child: Column(
                 children: [
-                  Icon(Icons.account_circle, size: 80, color: Colors.black54),
-                  SizedBox(height: 8),
-                  Text(
-                    'User',
-                    style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Colors.black),
+                  const Text("Invite Someone", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: inviteController,
+                    decoration: InputDecoration(
+                      hintText: "Enter email",
+                      prefixIcon: const Icon(Icons.send),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(backgroundColor: Colors.black, foregroundColor: Colors.white),
+                    onPressed: inviteUser,
+                    icon: const Icon(Icons.email),
+                    label: const Text("Send Invite"),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 30),
+          ),
+          const SizedBox(height: 20),
 
-            /// **Invite Feature**
-            Card(
-              elevation: 3,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      "Invite Someone",
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 10),
-                    TextField(
-                      controller: inviteController,
-                      decoration: InputDecoration(
-                        hintText: "Enter email",
-                        prefixIcon: const Icon(Icons.send),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.black,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      ),
-                      onPressed: inviteUser,
-                      icon: const Icon(Icons.email),
-                      label: const Text("Send Invite"),
-                    ),
-                  ],
+          /// Report Issue
+          ListTile(
+            leading: const Icon(Icons.report_problem, color: Colors.red, size: 30),
+            title: const Text("Report an Issue", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            subtitle: const Text("Tell us about any issues you are facing."),
+            onTap: () => reportIssuePopup(context),
+          ),
+          const Divider(),
+
+          /// Blocked Users Section
+          const Text("Blocked Users", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          blockedUsers.isEmpty
+              ? const Padding(
+                  padding: EdgeInsets.only(top: 10),
+                  child: Text("You haven't blocked anyone."),
+                )
+              : ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: blockedUsers.length,
+                  itemBuilder: (context, index) {
+                    final doc = blockedUsers[index];
+                    final blockedUserId = doc['blockedUserId'];
+                    return FutureBuilder<DocumentSnapshot>(
+                      future: FirebaseFirestore.instance.collection('users').doc(blockedUserId).get(),
+                      builder: (context, snapshot) {
+                        if (!snapshot.hasData) return const SizedBox();
+                        final userData = snapshot.data!;
+                        final username = userData['username'] ?? 'Unknown';
+                        return ListTile(
+                          title: Text(username),
+                          trailing: TextButton(
+                            onPressed: () => unblockUser(doc.id),
+                            child: const Text("Unblock", style: TextStyle(color: Colors.red)),
+                          ),
+                        );
+                      },
+                    );
+                  },
                 ),
-              ),
-            ),
-            const SizedBox(height: 20),
+          const SizedBox(height: 30),
 
-            /// **Report an Issue Feature**
-            Card(
-              elevation: 3,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              child: ListTile(
-                leading: const Icon(Icons.report_problem, color: Colors.red, size: 30),
-                title: const Text(
-                  "Report an Issue",
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                subtitle: const Text("Tell us about any issues you are facing."),
-                trailing: const Icon(Icons.arrow_forward_ios, color: Colors.grey, size: 18),
-                onTap: () => reportIssuePopup(context),
-              ),
-            ),
-            const SizedBox(height: 20),
+          /// Change Password
+          ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.grey[800]),
+            onPressed: () => passwordPopup(context),
+            icon: const Icon(Icons.password),
+            label: const Text('Change Password'),
+          ),
+          const SizedBox(height: 15),
 
-            /// **Change Password Button**
-            ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.grey[800],
-                minimumSize: const Size(double.infinity, 50),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-                elevation: 5,
-              ),
-              onPressed: () => passwordPopup(context),
-              icon: const Icon(Icons.password, color: Colors.white),
-              label: const Text(
-                'Change Password',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
-              ),
-            ),
-            const SizedBox(height: 15),
+          /// Delete Account
+          ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red[400]),
+            onPressed: () => deleteAccountPopup(context),
+            icon: const Icon(Icons.delete),
+            label: const Text('Delete Account'),
+          ),
+          const SizedBox(height: 15),
 
-
-            /// **Delete Account Button**
-            ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red[400],
-                minimumSize: const Size(double.infinity, 50),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-                elevation: 5,
-              ),
-              onPressed: () => deleteAccountPopup(context),
-              icon: const Icon(Icons.delete, color: Colors.white),
-              label: const Text(
-                'Delete Account',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
-              ),
-            ),
-            const SizedBox(height: 15),
-
-            /// **Log Out Button**
-            ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.grey[800],
-                minimumSize: const Size(double.infinity, 50),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-                elevation: 5,
-              ),
-              onPressed: () => logoutPopup(context),
-              icon: const Icon(Icons.logout, color: Colors.white),
-              label: const Text(
-                'Log Out',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
-              ),
-            ),
-          ],
-        ),
+          /// Log Out
+          ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.grey[800]),
+            onPressed: () => logoutPopup(context),
+            icon: const Icon(Icons.logout),
+            label: const Text('Log Out'),
+          ),
+        ],
       ),
     );
   }

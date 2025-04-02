@@ -23,73 +23,90 @@ class _SwipePageState extends State<SwipePage> {
     fetchItems();
   }
 
-  void fetchItems() async {
-    final snapshot = await FirebaseFirestore.instance
-        .collection('items')
-        .where('userId', isNotEqualTo: currentUserId) // Show other users’ items only
-        .get();
+ void fetchItems() async {
+  final blockedSnapshot = await FirebaseFirestore.instance
+      .collection('blocked_users')
+      .where('blockedBy', isEqualTo: currentUserId)
+      .get();
 
-    setState(() {
-      closetItems = snapshot.docs;
-      isLoading = false;
-    });
+  final blockedUserIds = blockedSnapshot.docs.map((doc) => doc['blockedUserId']).toList();
 
-    print("Fetched ${closetItems.length} swipeable items.");
-  }
+  final itemSnapshot = await FirebaseFirestore.instance
+      .collection('items')
+      .where('userId', isNotEqualTo: currentUserId)
+      .get();
+
+  final allItems = itemSnapshot.docs;
+
+  setState(() {
+    closetItems = allItems.where((doc) => !blockedUserIds.contains(doc['userId'])).toList();
+    isLoading = false;
+  });
+
+  print("Filtered and fetched ${closetItems.length} swipeable items.");
+}
+
 
   void handleSwipeRight(DocumentSnapshot item) async {
-    final likedItemId = item.id;
-    final ownerId = item['userId'];  // Owner's ID (the person whose item is liked)
+  final likedItemId = item.id;
+  final ownerId = item['userId'];
 
-    // Record the like for the current user
+  // Record the like
+  await FirebaseFirestore.instance
+      .collection('likes')
+      .doc(currentUserId)
+      .collection('liked')
+      .doc(ownerId)
+      .set({
+    'itemId': likedItemId,
+    'timestamp': FieldValue.serverTimestamp(),
+  });
+
+  // Check if match exists
+  final matchCheck = await FirebaseFirestore.instance
+      .collection('likes')
+      .doc(ownerId)
+      .collection('liked')
+      .doc(currentUserId)
+      .get();
+
+  if (matchCheck.exists) {
+    // Fetch the owner's user info
+    final userDoc = await FirebaseFirestore.instance.collection('users').doc(ownerId).get();
+    final otherUserName = userDoc['username'] ?? 'Unknown';
+    final otherUserFullName = userDoc['fullName'] ?? 'Unknown';
+
+    // Save the match
     await FirebaseFirestore.instance
-        .collection('likes')
-        .doc(currentUserId)
-        .collection('liked')
-        .doc(ownerId)
+        .collection('matches')
+        .doc('${currentUserId}_$ownerId')
         .set({
-      'itemId': likedItemId,
+      'users': [currentUserId, ownerId],
+      'itemA': likedItemId,
+      'itemB': matchCheck['itemId'],
       'timestamp': FieldValue.serverTimestamp(),
     });
 
-    // Check if the other user liked back (this means it's a match)
-    final matchCheck = await FirebaseFirestore.instance
-        .collection('likes')
-        .doc(ownerId)
-        .collection('liked')
-        .doc(currentUserId)
-        .get();
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("🎉 It's a match!")),
+    );
 
-    if (matchCheck.exists) {
-      // If the match exists, record the match in Firestore
-      await FirebaseFirestore.instance
-          .collection('matches')
-          .doc('${currentUserId}_$ownerId')
-          .set({
-        'users': [currentUserId, ownerId],
-        'itemA': likedItemId,
-        'itemB': matchCheck['itemId'],
-        'timestamp': FieldValue.serverTimestamp(),
-      });
-
-      // Show a success message
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("🎉 It's a match!")),
-      );
-
-      // Now navigate to the chat page with the correct parameters
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => ChatPage(
-            chatRoomId: '${currentUserId}_$ownerId',  // Unique chat room ID
-            currentUserId: currentUserId,
-            otherUserId: ownerId,
-          ),
+    // Navigate to chat
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ChatPage(
+          chatRoomId: '${currentUserId}_$ownerId',
+          currentUserId: currentUserId,
+          otherUserId: ownerId,
+          otherUserName: otherUserName,
+          otherUserFullName: otherUserFullName,
         ),
-      );
-    }
+      ),
+    );
   }
+}
+
 
   void handleSwipeLeft(DocumentSnapshot item) async {
     final passedItemId = item.id;
@@ -132,13 +149,11 @@ class _SwipePageState extends State<SwipePage> {
                         double swipeVelocity = details.primaryVelocity ?? 0;
 
                         if (swipeVelocity > 200) {
-                          // Swiped Right
                           handleSwipeRight(item);
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(content: Text("Liked 👍")),
                           );
                         } else if (swipeVelocity < -200) {
-                          // Swiped Left
                           handleSwipeLeft(item);
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(content: Text("Passed 👎")),

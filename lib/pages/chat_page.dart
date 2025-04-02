@@ -6,12 +6,16 @@ class ChatPage extends StatefulWidget {
   final String chatRoomId;
   final String currentUserId;
   final String otherUserId;
+  final String otherUserName;
+  final String otherUserFullName;
 
   const ChatPage({
     Key? key,
     required this.chatRoomId,
     required this.currentUserId,
     required this.otherUserId,
+    required this.otherUserName,
+    required this.otherUserFullName,
   }) : super(key: key);
 
   @override
@@ -22,11 +26,28 @@ class _ChatPageState extends State<ChatPage> {
   final TextEditingController _messageController = TextEditingController();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
+  // Rating-related variables
+  double _rating = 0;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Chat with ${widget.otherUserId}'),
+        title: Text('Chat with ${widget.otherUserName}'),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.rate_review),
+            onPressed: () {
+              _showRatingDialog(context);
+            },
+          ),
+          IconButton(
+            icon: Icon(Icons.block),
+            onPressed: () {
+              _showBlockDialog(context);
+            },
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -51,7 +72,7 @@ class _ChatPageState extends State<ChatPage> {
                     final senderId = message['senderId'];
                     final text = message['text'];
                     return ListTile(
-                      title: Text(senderId == widget.currentUserId ? 'You' : 'User'),
+                      title: Text(senderId == widget.currentUserId ? 'You' : widget.otherUserName),
                       subtitle: Text(text),
                     );
                   },
@@ -96,5 +117,105 @@ class _ChatPageState extends State<ChatPage> {
     });
 
     _messageController.clear();
+  }
+
+  // Rating Dialog
+  void _showRatingDialog(BuildContext context) {
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      double tempRating = _rating; // Use a temporary value inside the dialog
+
+      return StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            title: Text('Rate ${widget.otherUserFullName}'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Slider(
+                  value: tempRating,
+                  min: 0,
+                  max: 5,
+                  divisions: 5,
+                  label: tempRating.toString(),
+                  onChanged: (newRating) {
+                    setState(() {
+                      tempRating = newRating;
+                    });
+                  },
+                ),
+                Text('Rating: ${tempRating.toStringAsFixed(1)}'),
+              ],
+            ),
+            actions: <Widget>[
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                },
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () async {
+                  // Save to Firestore
+                  await FirebaseFirestore.instance.collection('ratings').add({
+                    'ratedBy': widget.currentUserId,
+                    'ratedTo': widget.otherUserId,
+                    'rating': tempRating,
+                    'timestamp': FieldValue.serverTimestamp(),
+                  });
+
+                  setState(() {
+                    _rating = tempRating; // Update main state if needed
+                  });
+
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('You rated ${widget.otherUserName}')),
+                  );
+                },
+                child: const Text('Submit'),
+              ),
+            ],
+          );
+        },
+      );
+    },
+  );
+}
+
+
+  // Block Dialog
+  void _showBlockDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Block User'),
+          content: const Text('Are you sure you want to block this user?'),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () async {
+                await _firestore.collection('blocked_users').add({
+                  'blockedBy': widget.currentUserId,
+                  'blockedUserId': widget.otherUserId,
+                  'timestamp': FieldValue.serverTimestamp(),
+                });
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('You have blocked ${widget.otherUserName}')));
+              },
+              child: const Text('Block'),
+            ),
+          ],
+        );
+      },
+    );
   }
 }

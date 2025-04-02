@@ -1,11 +1,11 @@
+import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/material.dart';
-import './closet.dart'; // Import ClosetPage for MyCloset
-import './swipe_page.dart'; // Import SwipePage for Home
-import './chat_page.dart';  // Import ChatPage
-import './settings_page.dart'; // Sidebar Menu
-import './selling.dart';  // SellingPage for adding items
+import './closet.dart'; 
+import './swipe_page.dart'; 
+import './chat_page.dart';  
+import './matches_page.dart'; 
+import './settings_page.dart'; 
 
 class HomePage extends StatefulWidget {
   HomePage({Key? key}) : super(key: key);
@@ -17,17 +17,12 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   final User? user = FirebaseAuth.instance.currentUser;
   String username = "Loading...";
-  int _selectedIndex = 0;  // Default page is MyCloset
+  int _selectedIndex = 0; 
 
-  // Pages for Bottom Navigation Bar
   final List<Widget> _pages = [
-    const ClosetPage(),  // My Closet
-    const SwipePage(),   // Home (Swipe Items)
-    const ChatPage(      // Chat
-      chatRoomId: "chatRoomId", 
-      currentUserId: "userId", 
-      otherUserId: "userId"
-    ),
+    const ClosetPage(),  
+    const SwipePage(),   
+    const MatchesPage(),  
   ];
 
   @override
@@ -36,11 +31,9 @@ class _HomePageState extends State<HomePage> {
     _fetchUsername();
   }
 
-  // Fetch user info from Firestore
   Future<void> _fetchUsername() async {
     if (user != null) {
-      DocumentSnapshot userDoc =
-          await FirebaseFirestore.instance.collection('users').doc(user!.uid).get();
+      DocumentSnapshot userDoc = await FirebaseFirestore.instance.collection('users').doc(user!.uid).get();
       if (userDoc.exists) {
         setState(() {
           username = userDoc['username'] ?? "No username";
@@ -53,20 +46,17 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  // Handle navigation item tap (Bottom Nav Bar)
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
     });
   }
 
-  // Sign out method
   Future<void> signOut(BuildContext context) async {
     await FirebaseAuth.instance.signOut();
     Navigator.pushReplacementNamed(context, '/login');
   }
 
-  // Title widget for the app bar
   Widget _title() {
     return const Text('CampusCloset',
         style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold));
@@ -80,7 +70,7 @@ class _HomePageState extends State<HomePage> {
         backgroundColor: const Color(0xFFF4F1E3),
         title: _title(),
       ),
-      drawer: Drawer( // Sidebar Menu
+      drawer: Drawer(
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
@@ -107,7 +97,7 @@ class _HomePageState extends State<HomePage> {
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => ClosetPage()),  // Navigate to SellingPage (where users add items)
+                  MaterialPageRoute(builder: (context) => const ClosetPage()),
                 );
               },
             ),
@@ -131,7 +121,7 @@ class _HomePageState extends State<HomePage> {
           ],
         ),
       ),
-      body: _pages[_selectedIndex],  // Show the current page based on selected index
+      body: _pages[_selectedIndex],
 
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
