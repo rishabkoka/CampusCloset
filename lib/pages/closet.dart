@@ -12,6 +12,7 @@ class ClosetPage extends StatefulWidget {
 
 class _ClosetPageState extends State<ClosetPage> {
   bool isDeleteMode = false; // Toggles delete icons
+  String sortBy = 'category';
 
   @override
   Widget build(BuildContext context) {
@@ -40,75 +41,103 @@ class _ClosetPageState extends State<ClosetPage> {
           ),
         ],
       ),
-      body: StreamBuilder(
-        stream: FirebaseFirestore.instance.collection('items')
-        .where('userId', isEqualTo: FirebaseAuth.instance.currentUser?.uid)
-        .snapshots(),
-        builder: (context, AsyncSnapshot<QuerySnapshot> snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-            return const Center(child: Text("Your closet is empty."));
-          }
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                const Text('Sort by: ', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                const SizedBox(width:10),
+                DropdownButton<String>(
+                  value: sortBy,
+                  items: const [
+                    DropdownMenuItem(value: 'category', child: Text('Category')),
+                    DropdownMenuItem(value: 'brand', child: Text('Brand')),
+                    DropdownMenuItem(value: 'size', child: Text('Size')),
+                    DropdownMenuItem(value: 'color', child: Text('Color')),
+                    DropdownMenuItem(value: 'condition', child: Text('Condition')),
+                  ],
+                  onChanged: (value) {
+                    setState(() {
+                      sortBy = value!;
+                    });
+                  },
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: StreamBuilder(
+              stream: FirebaseFirestore.instance.collection('items')
+              .where('userId', isEqualTo: FirebaseAuth.instance.currentUser?.uid)
+              .snapshots(),
+              builder: (context, AsyncSnapshot<QuerySnapshot> snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                  return const Center(child: Text("Your closet is empty."));
+                }
 
           // Organize items by category
-          Map<String, List<DocumentSnapshot>> categorizedItems = {
-            'Tops': [],
-            'Bottoms': [],
-            'Shoes': [],
-            'Bags': [],
-            'Accessories': []
-          };
-          for (var doc in snapshot.data!.docs) {
-            String category = doc['category'] ?? '';
-            if (categorizedItems.containsKey(category)) {
-              categorizedItems[category]!.add(doc);
-            }
-          }
+                Map<String, List<DocumentSnapshot>> groupedItems = {};
 
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: categorizedItems.entries.map((entry) {
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(entry.key, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 10),
-                    SizedBox(
-                      height: 120,
-                      child: ListView(
-                        scrollDirection: Axis.horizontal,
-                        children: entry.value.map((item) {
-                          return Stack(
-                            children: [
-                              Padding(
-                                padding: const EdgeInsets.only(right: 10),
-                                child: Image.network(item['imageUrl'], width: 100, height: 100, fit: BoxFit.cover),
-                              ),
-                              if (isDeleteMode) // Show delete icon only in delete mode
-                                Positioned(
-                                  top: 5,
-                                  right: 5,
-                                  child: IconButton(
-                                    icon: const Icon(Icons.remove_circle, color: Colors.red),
-                                    onPressed: () => _confirmDelete(context, item.id),
-                                  ),
-                                ),
-                            ],
-                          );
-                        }).toList(),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                  ],
+                for (var doc in snapshot.data!.docs) {
+                  String key = doc[sortBy] ?? 'Unknown';
+                  if(!groupedItems.containsKey(key)) {
+                    groupedItems[key] = [];
+                  }
+                  groupedItems[key]!.add(doc);
+                
+                }
+                List<String> sortedKeys = groupedItems.keys.toList()..sort();
+
+                return SingleChildScrollView(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: sortedKeys.map((key) {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(key, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                          const SizedBox(height: 10),
+                          SizedBox(
+                            height: 120,
+                            child: ListView(
+                              scrollDirection: Axis.horizontal,
+                              children: groupedItems[key]!.map((item) {
+                                return Stack(
+                                  children: [
+                                    Padding(
+                                      padding: const EdgeInsets.only(right: 10),
+                                      child: Image.network(item['imageUrl'], width: 100, height: 100, fit: BoxFit.cover),
+                                    ),
+                                    if (isDeleteMode) // Show delete icon only in delete mode
+                                      Positioned(
+                                        top: 5,
+                                        right: 5,
+                                        child: IconButton(
+                                          icon: const Icon(Icons.remove_circle, color: Colors.red),
+                                          onPressed: () => _confirmDelete(context, item.id),
+                                        ),
+                                      ),
+                                  ],
+                                );
+                             }).toList(),
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                        ],
+                      );
+                    }).toList(),
+                  ),
                 );
-              }).toList(),
+              },
             ),
-          );
-        },
+          ),
+        ],
       ),
     );
   }
