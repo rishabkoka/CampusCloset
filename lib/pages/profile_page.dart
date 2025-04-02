@@ -6,6 +6,9 @@ import 'edit_profile.dart';
 import 'category_selection.dart'; // Import category selection screen
 import 'package:flutter_firebase_project/auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart'; // Import Firestore
+import 'package:image_picker/image_picker.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 
 
 void main() {
@@ -42,7 +45,32 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   List<String> selectedCategories = [];
-  File? _profilePic;
+
+  Future<void> uploadProfilePic(ImageSource source) async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: source);
+    
+    if (pickedFile == null) return;
+
+    File imageFile = File(pickedFile.path);
+    String userId = FirebaseAuth.instance.currentUser!.uid;
+    String filePath = 'profile_pictures/$userId.jpg';
+
+    try {
+      TaskSnapshot uploadTask =
+          await FirebaseStorage.instance.ref(filePath).putFile(imageFile);
+
+      String downloadURL = await uploadTask.ref.getDownloadURL();
+
+      await FirebaseFirestore.instance.collection('users').doc(userId).update({
+        'profilePicURL': downloadURL,
+      });
+
+      print('Profile picture uploaded successfully!');
+    } catch (e) {
+      print('Error uploading image: $e');
+    }
+  }
 
   void updateCategories(List<String> categories) {
     setState(() {
@@ -221,16 +249,66 @@ class _ProfilePageState extends State<ProfilePage> {
                 children: [
                   CircleAvatar(
                     radius: 50,
-                    backgroundImage: _profilePic != null
-                      ? FileImage(_profilePic!)
-                      : AssetImage('assets/images/defaultprofilepic.jpg') as ImageProvider,
+                    child: StreamBuilder<DocumentSnapshot>(
+                      stream: FirebaseFirestore.instance
+                          .collection('users')
+                          .doc(FirebaseAuth.instance.currentUser!.uid)
+                          .snapshots(),
+                      builder: (context, snapshot) {
+                        if (!snapshot.hasData || snapshot.data == null || !snapshot.data!.exists) {
+                          return ClipOval(
+                            child: Image.asset(
+                              'assets/images/defaultprofilepic.jpg',
+                              fit: BoxFit.cover,
+                              width: 100,
+                              height: 100,
+                            ),
+                          );
+                        }
+                        var data = snapshot.data!.data() as Map<String, dynamic>;
+                        var profilePicURL = data.containsKey('profilePicURL') ? data['profilePicURL'] : null;
+                        return ClipOval(
+                          child: profilePicURL != null
+                              ? Image.network(
+                                  profilePicURL,
+                                  fit: BoxFit.cover,
+                                  width: 100,
+                                  height: 100,
+                                  loadingBuilder: (context, child, loadingProgress) {
+                                    if (loadingProgress == null) return child;
+                                    return Center(child: CircularProgressIndicator());
+                                  },
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return ClipOval(
+                                      child: Image.asset(
+                                        'assets/images/defaultprofilepic.jpg',
+                                        fit: BoxFit.cover,
+                                        width: 100,
+                                        height: 100,
+                                      ),
+                                    );
+                                  },
+                                )
+                              : ClipOval(
+                                  child: Image.asset(
+                                    'assets/images/defaultprofilepic.jpg',
+                                    fit: BoxFit.cover,
+                                    width: 100,
+                                    height: 100,
+                                  ),
+                                ),
+                        );
+                      },
+                    ),
                   ),
                   SizedBox(width: 20),
                   Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       ElevatedButton(
-                        onPressed: () {},
+                        onPressed: () {
+                          uploadProfilePic(ImageSource.camera);
+                        },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.black,
                           foregroundColor: Colors.white,
@@ -245,7 +323,9 @@ class _ProfilePageState extends State<ProfilePage> {
                       ),
                       SizedBox(height: 0),
                       ElevatedButton(
-                        onPressed: () {},
+                        onPressed: () {
+                          uploadProfilePic(ImageSource.gallery);
+                        },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.black,
                           foregroundColor: Colors.white,
