@@ -6,6 +6,7 @@ import './swipe_page.dart';
 import './chat_page.dart';  
 import './matches_page.dart'; 
 import './settings_page.dart'; 
+import 'admin_panel_page.dart';
 
 class HomePage extends StatefulWidget {
   HomePage({Key? key}) : super(key: key);
@@ -17,34 +18,54 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   final User? user = FirebaseAuth.instance.currentUser;
   String username = "Loading...";
+  bool isModerator = false; // State variable to check if user is a moderator
   int _selectedIndex = 0; 
 
   final List<Widget> _pages = [
     const ClosetPage(),  
     const SwipePage(),   
-    const MatchesPage(),  
+    const MatchesPage(),
+    const AdminPanelPage(),
   ];
 
   @override
   void initState() {
     super.initState();
-    _fetchUsername();
+    _fetchUserData();
   }
 
-  Future<void> _fetchUsername() async {
-    if (user != null) {
-      DocumentSnapshot userDoc = await FirebaseFirestore.instance.collection('users').doc(user!.uid).get();
-      if (userDoc.exists) {
-        setState(() {
-          username = userDoc['username'] ?? "No username";
-        });
-      } else {
-        setState(() {
-          username = "No username found";
-        });
+Future<void> _fetchUserData() async {
+  if (user != null) {
+    DocumentReference userRef = FirebaseFirestore.instance.collection('users').doc(user!.uid);
+
+    DocumentSnapshot userDoc = await userRef.get();
+    
+    if (userDoc.exists) {
+      Map<String, dynamic> userData = userDoc.data() as Map<String, dynamic>;
+
+      setState(() {
+        username = userData['username'] ?? "No username";
+        isModerator = userData['moderator'] ?? false;
+      });
+
+      // If the 'moderator' field does not exist, set it to false
+      if (!userData.containsKey('moderator')) {
+        await userRef.update({'moderator': false});
       }
+    } else {
+      // If the user document doesn't exist, create it with default values
+      await userRef.set({
+        'username': "No username",
+        'moderator': false,
+      });
+      setState(() {
+        username = "No username";
+        isModerator = false;
+      });
     }
   }
+}
+
 
   void _onItemTapped(int index) {
     setState(() {
@@ -98,6 +119,17 @@ class _HomePageState extends State<HomePage> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => const ClosetPage()),
+                );
+              },
+            ),
+            if (isModerator) // Conditionally show this ListTile
+              ListTile(
+              leading: const Icon(Icons.admin_panel_settings),
+              title: const Text('Admin Panel'),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const AdminPanelPage()),
                 );
               },
             ),
