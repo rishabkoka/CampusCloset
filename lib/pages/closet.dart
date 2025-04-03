@@ -108,22 +108,26 @@ class _ClosetPageState extends State<ClosetPage> {
                             child: ListView(
                               scrollDirection: Axis.horizontal,
                               children: groupedItems[key]!.map((item) {
-                                return Stack(
-                                  children: [
-                                    Padding(
-                                      padding: const EdgeInsets.only(right: 10),
-                                      child: Image.network(item['imageUrl'], width: 100, height: 100, fit: BoxFit.cover),
-                                    ),
-                                    if (isDeleteMode) // Show delete icon only in delete mode
-                                      Positioned(
-                                        top: 5,
-                                        right: 5,
-                                        child: IconButton(
-                                          icon: const Icon(Icons.remove_circle, color: Colors.red),
-                                          onPressed: () => _confirmDelete(context, item.id),
-                                        ),
+                                return GestureDetector(
+                                  onTap: () => _showItemDetails(context, item),
+                                  child: Stack(
+                                    children: [
+                                      Padding(
+                                        padding: const EdgeInsets.only(right: 10),
+                                        child: Image.network(item['imageUrl'], width: 100, height: 100, fit: BoxFit.cover),
                                       ),
-                                  ],
+                                    
+                                      if (isDeleteMode) // Show delete icon only in delete mode
+                                        Positioned(
+                                          top: 5,
+                                          right: 5,
+                                          child: IconButton(
+                                            icon: const Icon(Icons.remove_circle, color: Colors.red),
+                                            onPressed: () => _confirmDelete(context, item.id),
+                                          ),
+                                        ),
+                                      ],
+                                  ),
                                 );
                              }).toList(),
                             ),
@@ -160,6 +164,35 @@ class _ClosetPageState extends State<ClosetPage> {
                 Navigator.of(context).pop(); // Close dialog
               },
               child: const Text("Yes", style: TextStyle(color: Colors.red)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showItemDetails(BuildContext context, DocumentSnapshot item) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(item['category'] ?? 'Unknown Category'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Image.network(item['imageUrl'], width: 200, height: 200, fit: BoxFit.cover),
+              const SizedBox(height: 10),
+              Text("Brand: ${item['brand'] ?? 'N/A'}"),
+              Text("Size: ${item['size'] ?? 'N/A'}"),
+              Text("Color: ${item['color'] ?? 'N/A'}"),
+              Text("Condition: ${item['condition'] ?? 'N/A'}"),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text("Close"),
             ),
           ],
         );
