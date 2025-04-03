@@ -10,7 +10,6 @@ import 'package:image_picker/image_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 
-
 void main() {
   runApp(const MyApp());
 }
@@ -45,6 +44,7 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   List<String> selectedCategories = [];
+
 
   Future<void> uploadProfilePic(ImageSource source) async {
     final picker = ImagePicker();
@@ -178,13 +178,15 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-    String fullName = "Loading...";
-    String email = "Loading...";
-    String phone = "Loading...";
-    String bio = "Loading...";
-    String streetAddress = "Loading...";
-    String city = "Loading...";
-    String state = "Loading...";
+  String fullName = "Loading...";
+  String email = "Loading...";
+  String phone = "Loading...";
+  String bio = "Loading...";
+  String streetAddress = "Loading...";
+  String city = "Loading...";
+  String state = "Loading...";
+  // New variable for college info
+  String college = "Loading...";
 
   @override
   void initState() {
@@ -206,12 +208,12 @@ class _ProfilePageState extends State<ProfilePage> {
           streetAddress = userDoc["streetAddress"] ?? "No Address";
           city = userDoc["city"] ?? "No City";
           state = userDoc["state"] ?? "No State";
+          college = userDoc["college"] ?? "No College";
           // selectedCategories = List<String>.from(userDoc['categories'] ?? []);
         });
       }
     }
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -301,7 +303,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       },
                     ),
                   ),
-                  SizedBox(width: 20),
+                  const SizedBox(width: 20),
                   Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -312,16 +314,16 @@ class _ProfilePageState extends State<ProfilePage> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.black,
                           foregroundColor: Colors.white,
-                          minimumSize: Size(30, 30),
+                          minimumSize: const Size(30, 30),
                         ),
-                        child: Text(
+                        child: const Text(
                           'Take with Camera',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                       ),
-                      SizedBox(height: 0),
+                      const SizedBox(height: 0),
                       ElevatedButton(
                         onPressed: () {
                           uploadProfilePic(ImageSource.gallery);
@@ -329,9 +331,9 @@ class _ProfilePageState extends State<ProfilePage> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.black,
                           foregroundColor: Colors.white,
-                          minimumSize: Size(30, 30),
+                          minimumSize: const Size(30, 30),
                         ),
-                        child: Text(
+                        child: const Text(
                           'Choose from Library',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
@@ -342,9 +344,11 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                 ]
               ),
-              SizedBox(height: 8),
+              const SizedBox(height: 8),
               ProfileCard(title: "Personal Info", children: [
                 ProfileInfoRow(label: "Full Name", value: fullName),
+                // New row to display the selected college
+                ProfileInfoRow(label: "College", value: college),
                 ProfileInfoRow(label: "Email", value: email),
                 ProfileInfoRow(label: "Phone", value: phone),
               ]),

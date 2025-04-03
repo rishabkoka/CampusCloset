@@ -45,6 +45,21 @@ class EditProfileState extends State<EditProfile> {
   final TextEditingController cityController = TextEditingController();
   final TextEditingController stateController = TextEditingController();
 
+  String? selectedCollege;
+  final List<String> colleges = [
+    'Purdue University',
+    'Indiana University',
+    'University of Notre Dame',
+    'Ball State University',
+    'Indiana State University',
+    'Rose-Hulman Institute of Technology',
+    'Butler University',
+    'Valparaiso University',
+    'University of Evansville',
+    'Purdue University Fort Wayne',
+    'Wabash College'
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -63,6 +78,7 @@ class EditProfileState extends State<EditProfile> {
         streetController.text = data['streetAddress'] ?? '';
         cityController.text = data['city'] ?? '';
         stateController.text = data['state'] ?? '';
+        selectedCollege = data['college'] ?? null;
       });
     }
   }
@@ -81,6 +97,7 @@ class EditProfileState extends State<EditProfile> {
       'streetAddress': streetController.text,
       'city': cityController.text,
       'state': stateController.text,
+      'college': selectedCollege,
     });
 
     Navigator.pop(
@@ -116,12 +133,50 @@ class EditProfileState extends State<EditProfile> {
               const SizedBox(height: 8.0),
               const Divider(),
               UserInfoEditField(text: "Full Name", controller: fullNameController),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 10.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      "College",
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 6.0),
+                    DropdownButtonFormField<String>(
+                      decoration: InputDecoration(
+                        hintText: "Select College",
+                        filled: true,
+                        fillColor: Colors.white,
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+                        border: OutlineInputBorder(
+                          borderSide: const BorderSide(color: Colors.grey),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      value: selectedCollege,
+                      items: colleges.map((college) {
+                        return DropdownMenuItem(
+                          value: college,
+                          child: Text(college),
+                        );
+                      }).toList(),
+                      onChanged: (value) {
+                        setState(() {
+                          selectedCollege = value;
+                        });
+                      },
+                      validator: (value) => value == null ? "Please select a college" : null,
+                    ),
+                  ],
+                ),
+              ),
               UserInfoEditField(text: "Phone", controller: phoneController),
               UserInfoEditField(text: "Bio", controller: bioController),
               UserInfoEditField(text: "Street Address", controller: streetController),
               UserInfoEditField(text: "City", controller: cityController),
               UserInfoEditField(text: "State", controller: stateController),
-              const SizedBox(height: 16.0),
+              const SizedBox(height: 8.0),
               button("Save Profile", Colors.black, Colors.white, saveProfile, 50),
             ],
           ),
@@ -130,6 +185,7 @@ class EditProfileState extends State<EditProfile> {
     );
   }
 }
+
 
 class UserInfoEditField extends StatelessWidget {
   final String text;
