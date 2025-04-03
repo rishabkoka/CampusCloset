@@ -64,7 +64,15 @@ class _SellingPageState extends State<SellingPage> {
 
 
   Future<void> _submitItem() async {
-    if (_brandController.text.isEmpty || _priceController.text.isEmpty || _selectedCategory == null || _selectedLocation == null) {
+
+    if (_mainImage == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("No photo chosen. Please upload a main image.")),
+      );
+      return;
+    }
+
+    if (_brandController.text.isEmpty || _conditionController.text.isEmpty || _sizeController.text.isEmpty || _colorController.text.isEmpty || _styleController.text.isEmpty || _priceController.text.isEmpty || _selectedCategory == null || _selectedLocation == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Please fill in all required fields")),
       );
