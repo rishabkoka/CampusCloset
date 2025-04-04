@@ -36,7 +36,9 @@ class _SwipePageState extends State<SwipePage> {
       .where('userId', isNotEqualTo: currentUserId)
       .get();
 
-  final allItems = itemSnapshot.docs;
+  final allItems = itemSnapshot.docs.where((doc) {
+    return doc['status'] == 'Available';
+  });
 
   setState(() {
     closetItems = allItems.where((doc) => !blockedUserIds.contains(doc['userId'])).toList();
