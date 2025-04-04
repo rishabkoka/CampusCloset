@@ -29,8 +29,10 @@ class _SellingPageState extends State<SellingPage> {
   /// Dropdown values
   String? _selectedLocation;
   String? _selectedCategory;
+  String? _selectedStatus;
   final List<String> _locations = ["Purdue University", "Other Campus"];
   final List<String> _categories = ["Tops", "Bottoms", "Shoes", "Bags", "Accessories"];
+  final List<String> _statuses = ["Available", "Not Available"];
 
 
 
@@ -72,7 +74,7 @@ class _SellingPageState extends State<SellingPage> {
       return;
     }
 
-    if (_brandController.text.isEmpty || _conditionController.text.isEmpty || _sizeController.text.isEmpty || _colorController.text.isEmpty || _styleController.text.isEmpty || _priceController.text.isEmpty || _selectedCategory == null || _selectedLocation == null) {
+    if (_brandController.text.isEmpty || _conditionController.text.isEmpty || _sizeController.text.isEmpty || _colorController.text.isEmpty || _styleController.text.isEmpty || _priceController.text.isEmpty || _selectedCategory == null || _selectedLocation == null || _selectedStatus == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Please fill in all required fields")),
       );
@@ -115,6 +117,7 @@ class _SellingPageState extends State<SellingPage> {
       'style': _styleController.text,
       'location': _selectedLocation,
       'category': _selectedCategory,
+      'status': _selectedStatus,
       'price': double.parse(_priceController.text),
       'imageUrl': mainImageUrl ?? ''
     });
@@ -220,6 +223,11 @@ class _SellingPageState extends State<SellingPage> {
               _buildDropdownField('Category', _categories, _selectedCategory, (value) {
                 setState(() {
                   _selectedCategory = value;
+                });
+              }),
+              _buildDropdownField('Status', _statuses, _selectedStatus, (value) {
+                setState(() {
+                  _selectedStatus = value;
                 });
               }),
               _buildPriceField('Item Price', _priceController),

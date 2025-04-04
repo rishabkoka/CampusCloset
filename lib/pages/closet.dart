@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'selling.dart';
+import 'edit_item.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class ClosetPage extends StatefulWidget {
@@ -187,9 +188,17 @@ class _ClosetPageState extends State<ClosetPage> {
               Text("Size: ${item['size'] ?? 'N/A'}"),
               Text("Color: ${item['color'] ?? 'N/A'}"),
               Text("Condition: ${item['condition'] ?? 'N/A'}"),
+              Text("Status: ${item['status'] ?? 'N/A'}"),
             ],
           ),
           actions: [
+            TextButton(
+              onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => EditItem(item: item),),
+              ),
+              child: const Text("Edit"),
+            ),
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
               child: const Text("Close"),
