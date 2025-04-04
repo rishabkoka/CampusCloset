@@ -13,11 +13,23 @@ class MatchesPage extends StatefulWidget {
 class _MatchesPageState extends State<MatchesPage> {
   final String currentUserId = FirebaseAuth.instance.currentUser!.uid;
   List<DocumentSnapshot> matches = [];
+  List<String> blockedUserIds = [];
 
   @override
   void initState() {
     super.initState();
-    fetchMatches();
+    fetchBlockedUsers().then((_) => fetchMatches());
+  }
+
+  Future<void> fetchBlockedUsers() async {
+    final snapshot = await FirebaseFirestore.instance
+        .collection('blocked_users')
+        .where('blockedBy', isEqualTo: currentUserId)
+        .get();
+
+    setState(() {
+      blockedUserIds = snapshot.docs.map((doc) => doc['blockedUserId'] as String).toList();
+    });
   }
 
   void fetchMatches() async {
@@ -27,7 +39,11 @@ class _MatchesPageState extends State<MatchesPage> {
         .get();
 
     setState(() {
-      matches = snapshot.docs;
+      matches = snapshot.docs.where((doc) {
+        final users = List<String>.from(doc['users']);
+        final otherUserId = users.firstWhere((id) => id != currentUserId);
+        return !blockedUserIds.contains(otherUserId);
+      }).toList();
     });
   }
 
@@ -94,8 +110,8 @@ class _MatchesPageState extends State<MatchesPage> {
                       return const CircularProgressIndicator();
                     }
 
-                    if (snapshot.hasError || !snapshot.hasData) {
-                      return const Text('Error fetching user data');
+                    if (snapshot.hasError || !snapshot.hasData || !snapshot.data!.exists) {
+                      return const SizedBox();
                     }
 
                     final otherUserData = snapshot.data!;
