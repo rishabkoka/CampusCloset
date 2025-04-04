@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../auth.dart';
 import './home_page.dart';
 import './signup_page.dart';
@@ -12,7 +13,6 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-
   bool isLogin = true;
   String? errorMessage = '';
 
@@ -26,10 +26,26 @@ class _LoginPageState extends State<LoginPage> {
         password: _controllerPassword.text,
       );
 
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => HomePage()),
-      );
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        final bannedDoc = await FirebaseFirestore.instance
+            .collection('banned_users')
+            .doc(user.uid)
+            .get();
+
+        if (bannedDoc.exists) {
+          await FirebaseAuth.instance.signOut();
+          setState(() {
+            errorMessage = 'Your account has been banned by the moderators.';
+          });
+          return;
+        }
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => HomePage()),
+        );
+      }
     } on FirebaseAuthException catch (e) {
       setState(() {
         errorMessage = 'The email or password is incorrect. Please try again.';
@@ -40,7 +56,7 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F1E3), // Light Beige Background
+      backgroundColor: const Color(0xFFF4F1E3),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20),
         child: Column(
@@ -49,38 +65,23 @@ class _LoginPageState extends State<LoginPage> {
           children: [
             const Text(
               "Welcome,",
-              style: TextStyle(
-                fontSize: 32,
-                fontWeight: FontWeight.bold,
-                color: Colors.black,
-              ),
+              style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.black),
             ),
             const Text(
               "Glad to see you!",
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w500,
-                color: Colors.black,
-              ),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500, color: Colors.black),
             ),
             const SizedBox(height: 30),
-
-            // Email Input Field
             TextField(
               controller: _controllerEmail,
               decoration: InputDecoration(
                 hintText: "Email Address",
                 filled: true,
                 fillColor: Colors.white,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(20),
-                  borderSide: BorderSide.none,
-                ),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(20), borderSide: BorderSide.none),
               ),
             ),
             const SizedBox(height: 15),
-
-            // Password Input Field
             TextField(
               controller: _controllerPassword,
               obscureText: true,
@@ -88,98 +89,80 @@ class _LoginPageState extends State<LoginPage> {
                 hintText: "Password",
                 filled: true,
                 fillColor: Colors.white,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(20),
-                  borderSide: BorderSide.none,
-                ),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(20), borderSide: BorderSide.none),
               ),
             ),
             const SizedBox(height: 10),
-
-            // Error message display
-            if (errorMessage != null && errorMessage! .isNotEmpty)
+            if (errorMessage != null && errorMessage!.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 5),
                 child: Text(
                   errorMessage!,
-                  style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+                  style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
                 ),
               ),
-
-            // Forgot Password
             Align(
               alignment: Alignment.centerRight,
               child: TextButton(
-                onPressed: () {
-                  // Navigate to Forgot Password Page
-                },
+                onPressed: () {},
                 child: const Text(
                   "Forgot Password?",
-                  style: TextStyle(
-                    color: Colors.black,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
                 ),
               ),
             ),
-
-            // Login Button
             ElevatedButton(
               onPressed: signInWithEmailAndPassword,
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.white,
                 foregroundColor: Colors.black,
                 minimumSize: const Size(double.infinity, 50),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
-                ),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
               ),
-                // Login Function
-              child: const Text(
-                "Login",
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
+              child: const Text("Login", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             ),
             const SizedBox(height: 20),
-
-            // OR Divider
             Row(
               children: const [
                 Expanded(child: Divider(thickness: 1, color: Colors.black54)),
                 Padding(
                   padding: EdgeInsets.symmetric(horizontal: 10),
-                  child: Text(
-                    "Or Login with",
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-                  ),
+                  child: Text("Or Login with", style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
                 ),
                 Expanded(child: Divider(thickness: 1, color: Colors.black54)),
               ],
             ),
             const SizedBox(height: 15),
-
-            // Social Login Buttons
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 _socialLoginButton("assets/images/google_logo.png", () async {
                   User? user = await Auth().signInWithGoogle();
                   if (user != null) {
+                    final bannedDoc = await FirebaseFirestore.instance
+                        .collection('banned_users')
+                        .doc(user.uid)
+                        .get();
+
+                    if (bannedDoc.exists) {
+                      await FirebaseAuth.instance.signOut();
+                      setState(() {
+                        errorMessage = 'Your account has been banned by the moderators.';
+                      });
+                      return;
+                    }
+
                     Navigator.pushReplacement(
                       context,
                       MaterialPageRoute(builder: (context) => HomePage()),
                     );
                   }
-                }), // Google Logo
+                }),
                 const SizedBox(width: 20),
-                _socialLoginButton("assets/images/facebook_logo.png", () {
-                
-                })  // Facebook Logo
+                _socialLoginButton("assets/images/facebook_logo.png", () {}),
               ],
             ),
             const SizedBox(height: 30),
-
-            // Sign Up Link
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -190,14 +173,10 @@ class _LoginPageState extends State<LoginPage> {
                       context,
                       MaterialPageRoute(builder: (context) => SignupPage()),
                     );
-                    // Navigate to Sign Up Page
                   },
                   child: const Text(
                     "Sign Up Now",
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      decoration: TextDecoration.underline,
-                    ),
+                    style: TextStyle(fontWeight: FontWeight.bold, decoration: TextDecoration.underline),
                   ),
                 ),
               ],
@@ -214,12 +193,9 @@ class _LoginPageState extends State<LoginPage> {
       child: Container(
         height: 50,
         width: 100,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(15),
-        ),
+        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(15)),
         child: Center(
-          child: Image.asset(imagePath, height: 30), // Social Icon
+          child: Image.asset(imagePath, height: 30),
         ),
       ),
     );
