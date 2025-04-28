@@ -63,6 +63,27 @@ class _MatchesPageState extends State<MatchesPage> {
     return total / ratingsSnapshot.docs.length;
   }
 
+  Future<void> _markMessagesAsRead(String chatRoomId) async {
+    final messages = await FirebaseFirestore.instance
+      .collection('chats')
+      .doc(chatRoomId)
+      .collection('messages')
+      .where('receiverId', isEqualTo: currentUserId)
+      .where('read', isEqualTo: false)
+      .get();
+
+      // Create batch
+      final batch = FirebaseFirestore.instance.batch();
+      
+      // Add updates to batch
+      for (var doc in messages.docs) {
+        batch.update(doc.reference, {'read': true});
+      }
+
+      // Execute batch
+      await batch.commit();
+  }
+
   void showAverageRatingDialog(String userId, String username) async {
     double avgRating = await fetchAverageRating(userId);
 
@@ -84,6 +105,7 @@ class _MatchesPageState extends State<MatchesPage> {
       ),
     );
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -131,7 +153,27 @@ class _MatchesPageState extends State<MatchesPage> {
                         ],
                       ),
                       subtitle: Text('Item: ${match['itemA']}'),
-                      onTap: () {
+                      onTap: () async {
+                        final messages = await FirebaseFirestore.instance
+                        .collection('chats')
+                        .doc(match.id)
+                        .collection('messages')
+                        .where('receiverId', isEqualTo: currentUserId)
+                        .where('read', isEqualTo: false)
+                        .get();
+
+                        // Create batch
+                        final batch = FirebaseFirestore.instance.batch();
+                        
+                        // Add updates to batch
+                        for (var doc in messages.docs) {
+                          batch.update(doc.reference, {'read': true});
+                        }
+
+                        // Execute batch
+                        await batch.commit();
+                        await Future.delayed(const Duration(milliseconds: 300));
+                        
                         Navigator.push(
                           context,
                           MaterialPageRoute(

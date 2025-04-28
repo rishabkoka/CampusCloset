@@ -35,8 +35,8 @@ class NotificationsScreen extends StatelessWidget {
                   icon: const Icon(Icons.close),
                   onPressed: () {
                     FirebaseFirestore.instance.collection('notifications').doc(doc.id).update({
-                    'read': true,
-                  });
+                      'read': true,
+                    });
                   },
                 ),
               );
