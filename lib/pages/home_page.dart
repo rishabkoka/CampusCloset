@@ -3,10 +3,10 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import './closet.dart'; 
 import './swipe_page.dart'; 
-import './chat_page.dart';  
 import './matches_page.dart'; 
 import './settings_page.dart'; 
 import 'admin_panel_page.dart';
+import './notification_bell.dart';
 
 class HomePage extends StatefulWidget {
   HomePage({Key? key}) : super(key: key);
@@ -33,6 +33,7 @@ class _HomePageState extends State<HomePage> {
     super.initState();
     _fetchUserData();
   }
+
 
 Future<void> _fetchUserData() async {
   if (user != null) {
@@ -90,6 +91,9 @@ Future<void> _fetchUserData() async {
       appBar: AppBar(
         backgroundColor: const Color(0xFFF4F1E3),
         title: _title(),
+        actions: const [
+          NotificationBell(),
+        ],
       ),
       drawer: Drawer(
         child: ListView(

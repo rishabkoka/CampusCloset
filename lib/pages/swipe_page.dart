@@ -89,6 +89,16 @@ class _SwipePageState extends State<SwipePage> {
       'timestamp': FieldValue.serverTimestamp(),
     });
 
+    await _sendMatchNotification(
+      receiverId: currentUserId,
+      matcherId: ownerId,
+    );
+
+    await _sendMatchNotification(
+      receiverId: ownerId,
+      matcherId: currentUserId,
+    );
+
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text("🎉 It's a match!")),
     );
@@ -108,6 +118,27 @@ class _SwipePageState extends State<SwipePage> {
     );
   }
 }
+
+Future<void> _sendMatchNotification({
+    required String receiverId,
+    required String matcherId,
+  }) async {
+    try {
+
+      // Save notification to Firestore
+      await FirebaseFirestore.instance.collection('notifications').add({
+        'userId': receiverId,
+        'title': 'New Match!',
+        'body': 'You matched with $matcherId',
+        'timestamp': FieldValue.serverTimestamp(),
+        'read': false,
+        'type': 'match',
+      });
+
+    } catch (e) {
+      print('Error sending match notification: $e');
+    }
+  }
 
 
   void handleSwipeLeft(DocumentSnapshot item) async {
