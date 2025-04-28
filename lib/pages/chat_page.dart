@@ -43,6 +43,13 @@ class _ChatPageState extends State<ChatPage> {
     });
 
     _messageController.clear();
+    
+
+    final userDoc = await FirebaseFirestore.instance.collection('users').doc(widget.otherUserId).get();
+    final notif_status = userDoc['notifications'] ?? true;
+    if(notif_status == true) {
+      sendMessageEmail(widget.otherUserId);
+    }
   }
 
   void _showRatingDialog(BuildContext context) {

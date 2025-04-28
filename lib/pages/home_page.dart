@@ -83,7 +83,9 @@ Future<void> _fetchUserData() async {
     .where('read', isEqualTo: false)
     .snapshots()
     .listen((snapshot) {
-      setState(() => _unreadCount = snapshot.docs.length);
+      if(mounted) {
+        setState(() => _unreadCount = snapshot.docs.length);
+      }
     });
 
   }

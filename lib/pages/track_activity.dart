@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_firebase_project/pages/send_email.dart';
 import '../main.dart';
 import './login_page.dart';
 
@@ -67,7 +68,6 @@ class TrackActivityState extends State<TrackActivity> with WidgetsBindingObserve
   if (user != null) {
     try {
       DocumentReference userDoc = FirebaseFirestore.instance.collection('users').doc(user.uid);
-      
       DocumentSnapshot docSnapshot = await userDoc.get();
 
       if (docSnapshot.exists) {
@@ -79,6 +79,12 @@ class TrackActivityState extends State<TrackActivity> with WidgetsBindingObserve
           final DateTime now = DateTime.now();
           final Duration difference = now.difference(lastActive);
           //print(difference.inSeconds);
+          if (difference.inHours >= 96) {
+            //email user if notifs are on
+            if(data['notification'] == true) {
+              sendPingEmail(data['email']);
+            }
+          }
           if (difference.inHours >= 12) {
           //if (difference.inSeconds >= 5) {
             await _auth.signOut();
