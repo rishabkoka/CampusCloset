@@ -39,6 +39,7 @@ class _ChatPageState extends State<ChatPage> {
       'text': message,
       'timestamp': timestamp,
       'read': false,
+      'heartedBy': [],
     });
 
     _messageController.clear();
@@ -166,8 +167,11 @@ class _ChatPageState extends State<ChatPage> {
     );
   }
 
-  Widget _buildMessage(Map<String, dynamic> messageData) {
+  Widget _buildMessage(Map<String, dynamic> messageData, QueryDocumentSnapshot messageDoc) {
     bool isMe = messageData['senderId'] == widget.currentUserId;
+    final heartedBy = List<String>.from(messageData['heartedBy'] ?? []);
+    final isHearted = heartedBy.contains(widget.currentUserId);
+    final messageRef = messageDoc.reference;
 
     return Align(
       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
@@ -184,9 +188,36 @@ class _ChatPageState extends State<ChatPage> {
             bottomRight: isMe ? Radius.zero : const Radius.circular(16),
           ),
         ),
-        child: Text(
-          messageData['text'],
-          style: TextStyle(color: isMe ? Colors.white : Colors.black87, fontSize: 16),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Message text
+            Flexible(
+              child: Text(
+                messageData['text'],
+                style: TextStyle(color: isMe ? Colors.white : Colors.black87, fontSize: 16),
+              ),
+            ),
+            
+            // Heart button
+            IconButton(
+              icon: Icon(
+                isHearted ? Icons.favorite : Icons.favorite_border,
+                color: isHearted ? Colors.red : Colors.grey,
+              ),
+              onPressed: () {
+                if (isHearted) {
+                  messageRef.update({
+                    'heartedBy': FieldValue.arrayRemove([widget.currentUserId, widget.otherUserId]),
+                  });
+                } else {
+                  messageRef.update({
+                    'heartedBy': FieldValue.arrayUnion([widget.currentUserId, widget.otherUserId]),
+                  });
+                }
+              },
+            ),
+          ],
         ),
       ),
     );
@@ -234,8 +265,9 @@ class _ChatPageState extends State<ChatPage> {
                     padding: const EdgeInsets.all(10),
                     itemCount: messages.length,
                     itemBuilder: (context, index) {
+                      final messageDoc = messages[index];
                       final messageData = messages[index].data() as Map<String, dynamic>;
-                      return _buildMessage(messageData);
+                      return _buildMessage(messageData, messageDoc);
                     },
                   );
                 },
