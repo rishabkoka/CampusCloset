@@ -23,7 +23,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
           bottom: const TabBar(
             tabs: [
               Tab(text: 'Users'),
-              Tab(text: 'Posts'),
+              Tab(text: 'Items'),
             ],
           ),
         ),
