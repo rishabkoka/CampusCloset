@@ -33,17 +33,34 @@ class _SwipePageState extends State<SwipePage> {
 
   final blockedUserIds = blockedSnapshot.docs.map((doc) => doc['blockedUserId']).toList();
 
+  final prefs = await loadPreferences();
+  final categoryPrefs = prefs['categories']!;
+  final locationPrefs = prefs['locations']!;
+
   final itemSnapshot = await FirebaseFirestore.instance
       .collection('items')
       .where('userId', isNotEqualTo: currentUserId)
       .get();
 
-  final allItems = itemSnapshot.docs.where((doc) {
-    return doc['status'] == 'Available';
-  });
+  List<QueryDocumentSnapshot> filteredItems = [];
+
+  for (final doc in itemSnapshot.docs) {
+    final category = doc['category'];
+    final itemOwner = doc['userId'];
+    final ownerCollege = await getUserCollege(itemOwner);
+
+    if (
+      doc['status'] == 'Available' &&
+      categoryPrefs.contains(category) &&
+      locationPrefs.contains(ownerCollege) &&
+      !blockedUserIds.contains(itemOwner)
+    ) {
+      filteredItems.add(doc);
+    }
+}
 
   setState(() {
-    closetItems = allItems.where((doc) => !blockedUserIds.contains(doc['userId'])).toList();
+    closetItems = filteredItems;
     isLoading = false;
   });
 
@@ -202,8 +219,28 @@ Future<void> _sendMatchNotification({
       backgroundColor: const Color(0xFFF4F1E3),
       appBar: AppBar(
         backgroundColor: const Color(0xFFF4F1E3),
-        title: const Text("Discover Closets",
+        title: Row(
+            children: [
+              const Text("Discover Closets",
             style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+              const Spacer(),
+              ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white,
+                elevation: 5,
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              onPressed: () {
+                customizePopup(context);
+              },
+              child: Text("Customize",
+                style: TextStyle(fontSize: 15, color: Colors.black),
+              ),
+              )
+            ]
+        )
       ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -288,4 +325,189 @@ Future<void> _sendMatchNotification({
       ),
     );
   }
+
+void customizePopup(BuildContext context) async {
+  final List<String> categories = [
+    'Tops', 
+    'Bottoms', 
+    'Shoes', 
+    'Bags', 
+    'Accessories'
+  ];
+  final List<String> locations = [
+    'Purdue University',
+    'Indiana University',
+    'University of Notre Dame',
+    'Ball State University',
+    'Indiana State University',
+    'Rose-Hulman Institute of Technology',
+    'Butler University',
+    'Valparaiso University',
+    'University of Evansville',
+    'Purdue University Fort Wayne',
+    'Wabash College'
+  ];
+  final saved = await loadPreferences();
+  Set<String> selectedCategories = saved['categories']!.toSet();
+  Set<String> selectedLocations = saved['locations']!.toSet();
+
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return StatefulBuilder(
+        builder: (BuildContext context, StateSetter setState) {
+          return AlertDialog(
+            title: const Text('Customize'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Select Categories', style: TextStyle(fontWeight: FontWeight.bold)),
+                  ...categories.map((category) => CheckboxListTile(
+                        value: selectedCategories.contains(category),
+                        title: Text(category),
+                        controlAffinity: ListTileControlAffinity.leading,
+                        onChanged: (bool? isChecked) {
+                          setState(() {
+                            if (isChecked == true) {
+                              selectedCategories.add(category);
+                            } else {
+                              selectedCategories.remove(category);
+                            }
+                          });
+                        },
+                      )),
+                  const SizedBox(height: 16),
+                  const Text('Select Locations', style: TextStyle(fontWeight: FontWeight.bold)),
+                  ...locations.map((location) => CheckboxListTile(
+                        value: selectedLocations.contains(location),
+                        title: Text(location),
+                        controlAffinity: ListTileControlAffinity.leading,
+                        onChanged: (bool? isChecked) {
+                          setState(() {
+                            if (isChecked == true) {
+                              selectedLocations.add(location);
+                            } else {
+                              selectedLocations.remove(location);
+                            }
+                          });
+                        },
+                      )),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                child: const Text("Default"),
+                onPressed: () {
+                  selectedCategories = categories.toSet();
+                  selectedLocations = locations.toSet();
+                  savePreferences(selectedCategories, selectedLocations);
+                  Navigator.of(context).pop();
+                  fetchItems();
+                },
+              ),
+              TextButton(
+                child: const Text('Cancel'),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+              ElevatedButton(
+                child: const Text('Apply'),
+                onPressed: () {
+                  savePreferences(selectedCategories, selectedLocations);
+                  Navigator.of(context).pop();
+                  fetchItems();
+                },
+              ),
+            ],
+          );
+        },
+      );
+    },
+  );
+}
+
+Future<void> savePreferences(Set<String> categories, Set<String> locations) async {
+  final uid = FirebaseAuth.instance.currentUser?.uid;
+  if (uid == null) return;
+
+  final docRef = FirebaseFirestore.instance.collection('users').doc(uid);
+  await docRef.set({
+    'categoryPreferences': categories.toList(),
+    'locationPreferences': locations.toList(),
+  }, SetOptions(merge: true));
+}
+
+Future<Map<String, List<String>>> loadPreferences() async {
+const allCategories = [
+    'Tops', 
+    'Bottoms', 
+    'Shoes', 
+    'Bags', 
+    'Accessories'
+  ];
+  const allLocations = [
+    'Purdue University',
+    'Indiana University',
+    'University of Notre Dame',
+    'Ball State University',
+    'Indiana State University',
+    'Rose-Hulman Institute of Technology',
+    'Butler University',
+    'Valparaiso University',
+    'University of Evansville',
+    'Purdue University Fort Wayne',
+    'Wabash College'
+  ];
+
+  final uid = FirebaseAuth.instance.currentUser?.uid;
+  if (uid == null) return {'categories': [], 'locations': []};
+
+  final docRef = FirebaseFirestore.instance.collection('users').doc(uid);
+  final userDoc = await docRef.get();
+  final data = userDoc.data() ?? {};
+
+  final hasCategoryPrefs = data.containsKey('categoryPreferences');
+  final hasLocationPrefs = data.containsKey('locationPreferences');
+
+  final categoryPrefs = hasCategoryPrefs
+      ? List<String>.from(data['categoryPreferences'])
+      : allCategories;
+
+  final locationPrefs = hasLocationPrefs
+      ? List<String>.from(data['locationPreferences'])
+      : allLocations;
+
+  if (!hasCategoryPrefs || !hasLocationPrefs) {
+    await docRef.set({
+      if (!hasCategoryPrefs) 'categoryPreferences': allCategories,
+      if (!hasLocationPrefs) 'locationPreferences': allLocations,
+    }, SetOptions(merge: true));
+  }
+
+  return {
+    'categories': categoryPrefs,
+    'locations': locationPrefs,
+  };
+}
+
+Future<String?> getUserCollege(String userId) async {
+  try {
+    final doc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(userId)
+        .get();
+
+    if (doc.exists && doc.data() != null) {
+      return doc.data()!['college'] as String?;
+    } else {
+      return null;
+    }
+  } catch (e) {
+    print('Error fetching college for user $userId: $e');
+    return null;
+  }
+}
+
 }
