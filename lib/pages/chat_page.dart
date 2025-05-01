@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:flutter_firebase_project/pages/send_email.dart'; // adjust path if needed
+import 'view_user_profile_page.dart';
 
 class ChatPage extends StatefulWidget {
   final String chatRoomId;
@@ -94,6 +95,67 @@ class _ChatPageState extends State<ChatPage> {
     );
   }
 
+  void _showUnmatchDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Unmatch"),
+        content: const Text("Are you sure you want to unmatch? This will delete the chat history."),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel"),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await _handleUnmatch();
+            },
+            child: const Text("Unmatch"),
+          ),
+        ],
+      ),
+    );
+  }
+
+
+  Future<void> _handleUnmatch() async {
+    try {
+      // 1. Delete chat messages
+      final chatRef = _firestore.collection('chats').doc(widget.chatRoomId);
+      final messages = await chatRef.collection('messages').get();
+      for (var msg in messages.docs) {
+        await msg.reference.delete();
+      }
+      await chatRef.delete();
+
+      // 2. Find and delete the match document containing both users
+      final matchQuery = await _firestore
+          .collection('matches')
+          .where('users', arrayContains: widget.currentUserId)
+          .get();
+
+      for (var doc in matchQuery.docs) {
+        final users = List<String>.from(doc['users']);
+        if (users.contains(widget.otherUserId)) {
+          await doc.reference.delete();
+          break; // assuming only one match per user pair
+        }
+      }
+
+      // 3. Feedback and navigation
+      if (mounted) {
+        Fluttertoast.showToast(msg: "Unmatched successfully.");
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      Fluttertoast.showToast(msg: "Failed to unmatch. Please try again.");
+    }
+  }
+
+
+
+
   void _showBlockDialog(BuildContext context) {
     showDialog(
       context: context,
@@ -171,6 +233,21 @@ class _ChatPageState extends State<ChatPage> {
         title: Text('Chat with ${widget.otherUserName}'),
         actions: [
           IconButton(
+            icon: const Icon(Icons.person),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ViewUserProfilePage(otherUserId: widget.otherUserId),
+                ),
+              );
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.heart_broken , color: Colors.red),
+            onPressed: () => _showUnmatchDialog(context),
+          ),
+          IconButton(
             icon: const Icon(Icons.star, color: Colors.amber),
             onPressed: () => _showRatingDialog(context),
           ),
@@ -183,6 +260,7 @@ class _ChatPageState extends State<ChatPage> {
             onPressed: () => _showBlockDialog(context),
           ),
         ],
+
       ),
       body: Column(
         children: [
