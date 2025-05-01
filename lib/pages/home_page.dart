@@ -7,6 +7,7 @@ import './matches_page.dart';
 import './settings_page.dart'; 
 import 'admin_panel_page.dart';
 import './notification_bell.dart';
+import './match_history_page.dart';
 
 class HomePage extends StatefulWidget {
   HomePage({Key? key}) : super(key: key);
@@ -151,6 +152,16 @@ Future<void> _fetchUserData() async {
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => const AdminPanelPage()),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.favorite),
+              title: const Text('Match History'),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => MatchHistoryPage()),
                 );
               },
             ),
