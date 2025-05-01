@@ -23,7 +23,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
           bottom: const TabBar(
             tabs: [
               Tab(text: 'Users'),
-              Tab(text: 'Posts'),
+              Tab(text: 'Items'),
             ],
           ),
         ),
@@ -88,8 +88,12 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         IconButton(
+                          icon: const Icon(Icons.upgrade, color: Colors.green),
+                          onPressed: () => _promoteUserToModerator(user.id),
+                        ),
+                        IconButton(
                           icon: const Icon(Icons.delete, color: Colors.red),
-                          onPressed: () => _confirmDeleteUser(user.id, email),
+                          onPressed: () => _confirmDeleteUser(user.id, data),
                         ),
                       ],
                     ),
@@ -169,7 +173,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
     );
   }
 
-  void _confirmDeleteUser(String userId, String email) {
+  void _confirmDeleteUser(String userId, Map<String, dynamic> userData) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -183,7 +187,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
           TextButton(
             onPressed: () async {
               Navigator.pop(context);
-              await _deleteUser(userId);
+              await _banUser(userId, userData);
             },
             child: const Text('Delete', style: TextStyle(color: Colors.red)),
           ),
@@ -222,6 +226,51 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
       ),
     );
   }
+
+  Future<void> _banUser(String userId, Map<String, dynamic> userData) async {
+    try {
+      // Ensure we only copy safe data
+      Map<String, dynamic> sanitizedData = {
+        'username': userData['username'] ?? '',
+        'email': userData['email'] ?? '',
+        'bannedAt': FieldValue.serverTimestamp(),
+      };
+
+      // Create doc in banned_users
+      await FirebaseFirestore.instance
+          .collection('banned_users')
+          .doc(userId)
+          .set(sanitizedData);
+
+      print("User $userId added to banned_users.");
+
+      // Delete from users
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .delete();
+
+      print("User $userId removed from users collection.");
+    } catch (e) {
+      print("🔥 Error banning user: $e");
+    }
+  }
+
+
+
+  Future<void> _promoteUserToModerator(String userId) async {
+    try {
+      await FirebaseFirestore.instance.collection('users').doc(userId).update({
+        'moderator': true,
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('User promoted to moderator.')),
+      );
+    } catch (e) {
+      print("Error promoting user: $e");
+    }
+  }
+
 
   Future<void> _deleteItem(String itemId) async {
     try {

@@ -1,6 +1,7 @@
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:mailer/mailer.dart';
 import 'package:mailer/smtp_server/gmail.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 Future<void> sendInviteEmail(String recipientEmail) async {
   String username = "closetcampus01@gmail.com";  // Your Gmail
@@ -75,4 +76,52 @@ Future<void> sendConfirmationEmail(String recipientEmail) async {
   } catch (e) {
     print("❌ Failed to send invite email: $e");
   }
+}
+
+Future<void> sendPingEmail(String recipientEmail) async {
+  String username = "closetcampus01@gmail.com";  // Your Gmail
+  String password = "rhbk relj axqc kjrl";  // App Password (Replace with secure storage)
+
+  final smtpServer = gmail(username, password);
+
+  final message = Message()
+    ..from = Address(username, "Campus Closet")
+    ..recipients.add(recipientEmail)
+    ..subject = "We've missed you!"
+    ..text = "Visit your closet and check out the new listings!";
+
+  try {
+    await send(message, smtpServer);
+    print("✅ Invitation email sent successfully to $recipientEmail");
+  } catch (e) {
+    print("❌ Failed to send invite email: $e");
+  }
+}
+
+Future<void> sendMessageEmail(String recipientId) async {
+  String username = "closetcampus01@gmail.com";  // Your Gmail
+  String password = "rhbk relj axqc kjrl";  // App Password (Replace with secure storage)
+
+  final smtpServer = gmail(username, password);
+
+  final userDoc = await FirebaseFirestore.instance.collection('users').doc(recipientId).get();
+  final recipientEmail = userDoc['email'] ?? 'Unknown';
+
+
+    final message = Message()
+    ..from = Address(username, "Campus Closet")
+    ..recipients.add(recipientEmail)
+    ..subject = "You received a message"
+    ..text = "1 new message on Campus Closet, check it out!";
+
+    try {
+      await send(message, smtpServer);
+      print("✅ Invitation email sent successfully to $recipientEmail");
+    } catch (e) {
+      print("❌ Failed to send invite email: $e");
+    }
+
+
+
+
 }

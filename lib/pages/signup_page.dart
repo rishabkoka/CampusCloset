@@ -42,7 +42,8 @@ class _SignupPageState extends State<SignupPage> {
         await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
           'username': _controllerUsername.text,
           'email': _controllerEmail.text,
-          'uid': user.uid
+          'uid': user.uid,
+          'notifications': true
         });
 
         //send confirmation email
@@ -77,6 +78,7 @@ class _SignupPageState extends State<SignupPage> {
           await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
             'email': user.email,
             'username': username,
+            'notifications': true,
           });
         }
       }

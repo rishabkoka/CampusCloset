@@ -3,10 +3,10 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import './closet.dart'; 
 import './swipe_page.dart'; 
-import './chat_page.dart';  
 import './matches_page.dart'; 
 import './settings_page.dart'; 
 import 'admin_panel_page.dart';
+import './notification_bell.dart';
 
 class HomePage extends StatefulWidget {
   HomePage({Key? key}) : super(key: key);
@@ -32,7 +32,9 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     _fetchUserData();
+    _countUnreadMessages();
   }
+
 
 Future<void> _fetchUserData() async {
   if (user != null) {
@@ -73,6 +75,22 @@ Future<void> _fetchUserData() async {
     });
   }
 
+  int _unreadCount = 0;
+  void _countUnreadMessages() {
+    FirebaseFirestore.instance
+    .collectionGroup('messages')
+    .where('receiverId', isEqualTo: user!.uid)
+    .where('read', isEqualTo: false)
+    .snapshots()
+    .listen((snapshot) {
+      if(mounted) {
+        setState(() => _unreadCount = snapshot.docs.length);
+      }
+    });
+
+  }
+
+
   Future<void> signOut(BuildContext context) async {
     await FirebaseAuth.instance.signOut();
     Navigator.pushReplacementNamed(context, '/login');
@@ -90,6 +108,9 @@ Future<void> _fetchUserData() async {
       appBar: AppBar(
         backgroundColor: const Color(0xFFF4F1E3),
         title: _title(),
+        actions: const [
+          NotificationBell(),
+        ],
       ),
       drawer: Drawer(
         child: ListView(
@@ -158,7 +179,7 @@ Future<void> _fetchUserData() async {
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
-        items: const <BottomNavigationBarItem>[
+        items: <BottomNavigationBarItem>[
           BottomNavigationBarItem(
             icon: Icon(Icons.cabin),
             label: 'My Closet',
@@ -168,8 +189,38 @@ Future<void> _fetchUserData() async {
             label: 'Home',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.chat),
+            icon: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Icon(Icons.chat),
+                if (_unreadCount > 0)
+                Positioned(
+                  right: -4,
+                  top: -4,
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: const BoxDecoration(
+                      color: Colors.red,
+                      shape: BoxShape.circle,
+                    ),
+                    constraints: BoxConstraints(
+                      minWidth: 16,
+                      minHeight: 16,
+                    ),
+                    child: Text(
+                      _unreadCount > 9 ? '9+' : _unreadCount.toString(),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+              ],
+            ),
             label: 'Chat',
+            
           ),
         ],
       ),

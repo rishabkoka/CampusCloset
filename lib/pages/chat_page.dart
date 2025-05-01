@@ -36,11 +36,21 @@ class _ChatPageState extends State<ChatPage> {
 
     await _firestore.collection('chats').doc(widget.chatRoomId).collection('messages').add({
       'senderId': widget.currentUserId,
+      'receiverId': widget.otherUserId,
       'text': message,
       'timestamp': timestamp,
+      'read': false,
+      'heartedBy': [],
     });
 
     _messageController.clear();
+    
+
+    final userDoc = await FirebaseFirestore.instance.collection('users').doc(widget.otherUserId).get();
+    final notif_status = userDoc['notifications'] ?? true;
+    if(notif_status == true) {
+      sendMessageEmail(widget.otherUserId);
+    }
   }
 
   void _showRatingDialog(BuildContext context) {
@@ -226,11 +236,70 @@ class _ChatPageState extends State<ChatPage> {
     );
   }
 
+  Widget _buildMessage(Map<String, dynamic> messageData, QueryDocumentSnapshot messageDoc) {
+    bool isMe = messageData['senderId'] == widget.currentUserId;
+    final heartedBy = List<String>.from(messageData['heartedBy'] ?? []);
+    final isHearted = heartedBy.contains(widget.currentUserId);
+    final messageRef = messageDoc.reference;
+
+    return Align(
+      alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.7),
+        decoration: BoxDecoration(
+          color: isMe ? Colors.blueAccent.shade100 : Colors.grey.shade300,
+          borderRadius: BorderRadius.only(
+            topLeft: const Radius.circular(16),
+            topRight: const Radius.circular(16),
+            bottomLeft: isMe ? const Radius.circular(16) : Radius.zero,
+            bottomRight: isMe ? Radius.zero : const Radius.circular(16),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Message text
+            Flexible(
+              child: Text(
+                messageData['text'],
+                style: TextStyle(color: isMe ? Colors.white : Colors.black87, fontSize: 16),
+              ),
+            ),
+            
+            // Heart button
+            IconButton(
+              icon: Icon(
+                isHearted ? Icons.favorite : Icons.favorite_border,
+                color: isHearted ? Colors.red : Colors.grey,
+              ),
+              onPressed: () {
+                if (isHearted) {
+                  messageRef.update({
+                    'heartedBy': FieldValue.arrayRemove([widget.currentUserId, widget.otherUserId]),
+                  });
+                } else {
+                  messageRef.update({
+                    'heartedBy': FieldValue.arrayUnion([widget.currentUserId, widget.otherUserId]),
+                  });
+                }
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+  
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text('Chat with ${widget.otherUserName}'),
+        backgroundColor: Colors.blueAccent,
+        elevation: 4,
         actions: [
           IconButton(
             icon: const Icon(Icons.person),
@@ -262,57 +331,75 @@ class _ChatPageState extends State<ChatPage> {
         ],
 
       ),
-      body: Column(
-        children: [
-          Expanded(
-            child: StreamBuilder<QuerySnapshot>(
-              stream: _firestore
+      body: SafeArea(
+        child: Column(
+          children: [
+            Expanded(
+              child: StreamBuilder<QuerySnapshot>(
+                stream: _firestore
                   .collection('chats')
                   .doc(widget.chatRoomId)
                   .collection('messages')
                   .orderBy('timestamp')
                   .snapshots(),
-              builder: (context, snapshot) {
-                if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
 
-                final messages = snapshot.data!.docs;
-                return ListView.builder(
-                  itemCount: messages.length,
-                  itemBuilder: (context, index) {
-                    final msg = messages[index];
-                    final senderId = msg['senderId'];
-                    return ListTile(
-                      title: Text(senderId == widget.currentUserId ? 'You' : widget.otherUserName),
-                      subtitle: Text(msg['text']),
-                    );
-                  },
-                );
-              },
+                  final messages = snapshot.data!.docs;
+                  return ListView.builder(
+                    padding: const EdgeInsets.all(10),
+                    itemCount: messages.length,
+                    itemBuilder: (context, index) {
+                      final messageDoc = messages[index];
+                      final messageData = messages[index].data() as Map<String, dynamic>;
+                      return _buildMessage(messageData, messageDoc);
+                    },
+                  );
+                },
+              ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _messageController,
-                    decoration: const InputDecoration(hintText: 'Type a message...'),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade100,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 10,
                   ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.send),
-                  onPressed: () {
-                    if (_messageController.text.trim().isNotEmpty) {
-                      _sendMessage();
-                    }
-                  },
-                ),
-              ],
+                ],
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _messageController,
+                      decoration: InputDecoration(
+                        hintText: "Type a message...",
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(30),
+                          borderSide: BorderSide.none,
+                        ),
+                        filled: true,
+                        fillColor: Colors.white,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  CircleAvatar(
+                    backgroundColor: Colors.blueAccent,
+                    child: IconButton(
+                      icon: const Icon(Icons.send, color: Colors.white),
+                      onPressed: _sendMessage,
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
-      ),
+          ],
+        ),
+      )
     );
   }
 }

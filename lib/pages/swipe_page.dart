@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import './chat_page.dart';
+import 'package:mailer/mailer.dart';
+import 'package:mailer/smtp_server/gmail.dart';
 
 class SwipePage extends StatefulWidget {
   const SwipePage({Key? key}) : super(key: key);
@@ -77,6 +79,15 @@ class _SwipePageState extends State<SwipePage> {
     final userDoc = await FirebaseFirestore.instance.collection('users').doc(ownerId).get();
     final otherUserName = userDoc['username'] ?? 'Unknown';
     final otherUserFullName = userDoc['fullName'] ?? 'Unknown';
+    final emailAdd = userDoc['email'] ?? 'Unknown';
+
+    final userDoc2 = await FirebaseFirestore.instance.collection('users').doc(currentUserId).get();
+    final emailAdd2 = userDoc2['email'] ?? 'Unknown';
+
+
+    final notif_status1 = userDoc['notifications'] ?? true;
+
+    final notif_status2 = userDoc2['notifications'] ?? true;
 
     // Save the match
     await FirebaseFirestore.instance
@@ -88,6 +99,24 @@ class _SwipePageState extends State<SwipePage> {
       'itemB': matchCheck['itemId'],
       'timestamp': FieldValue.serverTimestamp(),
     });
+
+    await _sendMatchNotification(
+      receiverId: currentUserId,
+      matcherId: ownerId,
+    );
+
+    await _sendMatchNotification(
+      receiverId: ownerId,
+      matcherId: currentUserId,
+    );
+
+    //send email notifications of match if notifs are on
+    if(notif_status1 == true) {
+      await _sendMatchEmail(emailAdd);
+    }
+    if(notif_status2 == true) {
+      await _sendMatchEmail(emailAdd2);
+    }
 
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text("🎉 It's a match!")),
@@ -108,6 +137,48 @@ class _SwipePageState extends State<SwipePage> {
     );
   }
 }
+
+Future<void> _sendMatchEmail(String recipientEmail) async {
+    String username = "closetcampus01@gmail.com";  // Your Gmail
+    String password = "rhbk relj axqc kjrl";  // App Password (Replace with secure storage)
+
+    final smtpServer = gmail(username, password);
+
+    final message = Message()
+      ..from = Address(username, "Campus Closet")
+      ..recipients.add(recipientEmail)
+      ..subject = "You've got a match!"
+      ..text = "1 new match on Campus Closet, check it out!";
+
+    try {
+      await send(message, smtpServer);
+      print("✅ Invitation email sent successfully to $recipientEmail");
+    } catch (e) {
+      print("❌ Failed to send invite email: $e");
+    }
+  }
+
+
+Future<void> _sendMatchNotification({
+    required String receiverId,
+    required String matcherId,
+  }) async {
+    try {
+
+      // Save notification to Firestore
+      await FirebaseFirestore.instance.collection('notifications').add({
+        'userId': receiverId,
+        'title': 'New Match!',
+        'body': 'You matched with $matcherId',
+        'timestamp': FieldValue.serverTimestamp(),
+        'read': false,
+        'type': 'match',
+      });
+
+    } catch (e) {
+      print('Error sending match notification: $e');
+    }
+  }
 
 
   void handleSwipeLeft(DocumentSnapshot item) async {
