@@ -1,8 +1,9 @@
+import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:flutter_firebase_project/pages/send_email.dart'; // adjust path if needed
+import 'package:flutter_firebase_project/pages/send_email.dart';
 import 'view_user_profile_page.dart';
 
 class ChatPage extends StatefulWidget {
@@ -29,6 +30,47 @@ class _ChatPageState extends State<ChatPage> {
   final TextEditingController _messageController = TextEditingController();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   double _rating = 0;
+
+  String? _suggestedLocation;
+
+  @override
+  void initState() {
+    super.initState();
+    _pickRandomPurdueLocation();
+  }
+
+  void _pickRandomPurdueLocation() {
+    final locations = [
+      "Purdue Memorial Union",
+      "Greyhouse Coffee Co.",
+      "Hicks Undergraduate Library",
+      "West Lafayette Public Library",
+      "Chauncey Hill Starbucks",
+      "Krach Leadership Center"
+    ];
+    final random = Random();
+    final randomSpot = locations[random.nextInt(locations.length)];
+    setState(() {
+      _suggestedLocation = "Suggested Meet-up: $randomSpot";
+    });
+  }
+
+  Widget _buildMeetupBanner() {
+    if (_suggestedLocation == null) return const SizedBox.shrink();
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(10),
+      color: Colors.green.shade100,
+      child: Row(
+        children: [
+          const Icon(Icons.location_on, color: Colors.green),
+          const SizedBox(width: 8),
+          Expanded(child: Text(_suggestedLocation!, style: const TextStyle(fontSize: 14))),
+        ],
+      ),
+    );
+  }
 
   void _sendMessage() async {
     final message = _messageController.text.trim();
@@ -334,6 +376,7 @@ class _ChatPageState extends State<ChatPage> {
       body: SafeArea(
         child: Column(
           children: [
+            _buildMeetupBanner(),
             Expanded(
               child: StreamBuilder<QuerySnapshot>(
                 stream: _firestore
