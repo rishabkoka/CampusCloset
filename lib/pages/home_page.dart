@@ -9,6 +9,7 @@ import './matches_page.dart';
 import './settings_page.dart'; 
 import 'admin_panel_page.dart';
 import './notification_bell.dart';
+import './match_history_page.dart';
 
 class HomePage extends StatefulWidget {
   HomePage({Key? key}) : super(key: key);
@@ -126,12 +127,44 @@ class _HomePageState extends State<HomePage> {
             ),
             if (isModerator)
               ListTile(
+
                 leading: const Icon(Icons.admin_panel_settings),
                 title: const Text('Admin Panel'),
                 onTap: () {
                   Navigator.push(context, MaterialPageRoute(builder: (context) => const AdminPanelPage()));
                 },
               ),
+
+              leading: const Icon(Icons.admin_panel_settings),
+              title: const Text('Admin Panel'),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const AdminPanelPage()),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.favorite),
+              title: const Text('Match History'),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => MatchHistoryPage()),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.settings),
+              title: const Text('Settings'),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const SettingsPage()),
+                );
+              },
+            ),
+
             ListTile(
               leading: const Icon(Icons.logout),
               title: const Text('Sign Out'),
