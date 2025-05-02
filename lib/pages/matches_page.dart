@@ -40,6 +40,8 @@ class _MatchesPageState extends State<MatchesPage> {
         .orderBy('mostRecent', descending: true)
         .get();
 
+    if (!mounted) return;
+
     setState(() {
       matches = snapshot.docs.where((doc) {
         final users = List<String>.from(doc['users']);

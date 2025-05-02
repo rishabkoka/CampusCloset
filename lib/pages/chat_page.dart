@@ -464,8 +464,6 @@ class _ChatPageState extends State<ChatPage> {
                     itemBuilder: (context, index) {
                       final messageDoc = messages[index];
                       final messageData = messages[index].data() as Map<String, dynamic>;
-                      print(messageData);
-                      print(widget.chatRoomId);
                       return _buildMessage(messageData, messageDoc);
                     },
                   );
