@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import './chat_page.dart';
+import 'package:intl/intl.dart';
 
 class MatchesPage extends StatefulWidget {
   const MatchesPage({Key? key}) : super(key: key);
@@ -36,6 +37,7 @@ class _MatchesPageState extends State<MatchesPage> {
     final snapshot = await FirebaseFirestore.instance
         .collection('matches')
         .where('users', arrayContains: currentUserId)
+        .orderBy('mostRecent', descending: true)
         .get();
 
     setState(() {
@@ -152,7 +154,13 @@ class _MatchesPageState extends State<MatchesPage> {
                           ),
                         ],
                       ),
-                      subtitle: Text('Item: ${match['itemA']}'),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Last Active: ${_formatTimestamp(match['mostRecent'])}'),
+                          Text('Item: ${match['itemA']}'),
+                        ]
+                      ),
                       onTap: () async {
                         final messages = await FirebaseFirestore.instance
                         .collection('chats')
@@ -174,7 +182,7 @@ class _MatchesPageState extends State<MatchesPage> {
                         await batch.commit();
                         await Future.delayed(const Duration(milliseconds: 300));
                         
-                        Navigator.push(
+                        await Navigator.push(
                           context,
                           MaterialPageRoute(
                             builder: (context) => ChatPage(
@@ -186,6 +194,7 @@ class _MatchesPageState extends State<MatchesPage> {
                             ),
                           ),
                         );
+                        fetchMatches();
                       },
                     );
                   },
@@ -193,5 +202,10 @@ class _MatchesPageState extends State<MatchesPage> {
               },
             ),
     );
+  }
+
+  String _formatTimestamp(Timestamp timestamp) {
+    final dateTime = timestamp.toDate();
+    return DateFormat('hh:mm a MM/dd/yy').format(dateTime);
   }
 }

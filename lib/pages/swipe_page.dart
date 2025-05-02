@@ -115,6 +115,7 @@ class _SwipePageState extends State<SwipePage> {
       'itemA': likedItemId,
       'itemB': matchCheck['itemId'],
       'timestamp': FieldValue.serverTimestamp(),
+      'mostRecent': FieldValue.serverTimestamp(),
     });
 
     await _sendMatchNotification(

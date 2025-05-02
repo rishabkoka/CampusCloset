@@ -96,6 +96,23 @@ class _ChatPageState extends State<ChatPage> {
     if(notif_status == true) {
       sendMessageEmail(widget.otherUserId);
     }
+
+    // Update mostRecent field in the match
+    String user1 = widget.currentUserId;
+    String user2 = widget.otherUserId;
+    final docId1 = '$user1$user2';
+    final docId2 = '$user2$user1';
+    final matchRef1 = FirebaseFirestore.instance.collection('matches').doc(docId1);
+    final matchRef2 = FirebaseFirestore.instance.collection('matches').doc(docId2);
+    DocumentSnapshot snapshot1 = await matchRef1.get();
+    DocumentSnapshot snapshot2 = await matchRef2.get();
+    final data = {'mostRecent': Timestamp.now()};
+
+    if (snapshot1.exists) {
+      await matchRef1.set(data, SetOptions(merge: true));
+    } else if (snapshot2.exists) {
+      await matchRef2.set(data, SetOptions(merge: true));
+    }
   }
 
   void _showRatingDialog(BuildContext context) {
@@ -447,6 +464,8 @@ class _ChatPageState extends State<ChatPage> {
                     itemBuilder: (context, index) {
                       final messageDoc = messages[index];
                       final messageData = messages[index].data() as Map<String, dynamic>;
+                      print(messageData);
+                      print(widget.chatRoomId);
                       return _buildMessage(messageData, messageDoc);
                     },
                   );
