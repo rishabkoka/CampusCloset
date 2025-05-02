@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:flutter_firebase_project/pages/send_email.dart'; // adjust path if needed
 import 'view_user_profile_page.dart';
+import 'package:intl/intl.dart';
 
 class ChatPage extends StatefulWidget {
   final String chatRoomId;
@@ -29,6 +30,8 @@ class _ChatPageState extends State<ChatPage> {
   final TextEditingController _messageController = TextEditingController();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   double _rating = 0;
+  final ScrollController _scrollController = ScrollController();
+  bool _hasScrolled = false;
 
   void _sendMessage() async {
     final message = _messageController.text.trim();
@@ -242,6 +245,20 @@ class _ChatPageState extends State<ChatPage> {
     final isHearted = heartedBy.contains(widget.currentUserId);
     final messageRef = messageDoc.reference;
 
+    // Get and format message time
+    DateTime? messageTime;
+    String timeText = '';
+    String dateText = '';
+    if (messageData['timestamp'] != null) {
+      messageTime = (messageData['timestamp'] as Timestamp).toDate();
+      timeText = DateFormat.jm().format(messageTime);
+      final now = DateTime.now();
+      final isToday = messageTime.year == now.year &&
+                  messageTime.month == now.month &&
+                  messageTime.day == now.day;
+      dateText = isToday ? '' : DateFormat('MM/dd/yy').format(messageTime);
+    }
+
     return Align(
       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
@@ -286,7 +303,31 @@ class _ChatPageState extends State<ChatPage> {
                 }
               },
             ),
-          ],
+            if (timeText.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 0.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      timeText,
+                      style: TextStyle(
+                        color: isMe ? Colors.white : Colors.black87,
+                        fontSize: 12,
+                      ),
+                    ),
+                    if (dateText.isNotEmpty)
+                      Text(
+                        dateText,
+                        style: TextStyle(
+                          color: isMe ? Colors.white : Colors.black87,
+                          fontSize: 12,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
         ),
       ),
     );
@@ -346,7 +387,18 @@ class _ChatPageState extends State<ChatPage> {
                   if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
 
                   final messages = snapshot.data!.docs;
+
+                  if (!_hasScrolled && messages.isNotEmpty) {
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (_scrollController.hasClients) {
+                        _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+                         _hasScrolled = true;
+                      }
+                    });
+                  }
+
                   return ListView.builder(
+                    controller: _scrollController,
                     padding: const EdgeInsets.all(10),
                     itemCount: messages.length,
                     itemBuilder: (context, index) {
