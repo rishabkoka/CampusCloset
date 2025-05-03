@@ -38,7 +38,7 @@ class _MatchHistoryPageState extends State<MatchHistoryPage> {
       final otherUserId = isCurrentUserFirst ? users[1] : users[0];
       if (blockedUserIds.contains(otherUserId)) continue;
 
-      final otherItemId = isCurrentUserFirst ? itemB : itemA;
+      final otherItemId = isCurrentUserFirst ? itemA : itemB;
 
       final itemSnapshot = await FirebaseFirestore.instance
           .collection('items')
